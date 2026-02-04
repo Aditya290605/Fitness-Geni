@@ -51,6 +51,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
+  void _previousPage() {
+    if (_currentPage > 0) {
+      debugPrint('⬅️ Moving to page ${_currentPage - 1}');
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
   Future<void> _completeOnboarding() async {
     debugPrint('🎉 Completing onboarding...');
     debugPrint('Weight: $_weight, Height: $_height, Gender: $_gender');
@@ -144,6 +154,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     });
                     _nextPage();
                   },
+                  onBack: null, // First page, no back
                 ),
 
                 // Step 2: Height
@@ -156,6 +167,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     });
                     _nextPage();
                   },
+                  onBack: _previousPage,
                 ),
 
                 // Step 3: Gender
@@ -168,6 +180,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     });
                     _nextPage();
                   },
+                  onBack: _previousPage,
                 ),
 
                 // Step 4: Diet Type
@@ -180,6 +193,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     });
                     _nextPage();
                   },
+                  onBack: _previousPage,
                 ),
 
                 // Step 5: Fitness Goal
@@ -192,6 +206,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     });
                     _completeOnboarding();
                   },
+                  onBack: _previousPage,
                 ),
               ],
             ),

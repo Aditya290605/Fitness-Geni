@@ -3,15 +3,17 @@ import 'package:wheel_picker/wheel_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_button.dart';
 
-/// Premium weight input screen with wheel picker
+/// Premium weight input screen - Clean dialer only
 class WeightScreen extends StatefulWidget {
   final double? initialWeight;
   final Function(double) onWeightSelected;
+  final VoidCallback? onBack;
 
   const WeightScreen({
     super.key,
     this.initialWeight,
     required this.onWeightSelected,
+    this.onBack,
   });
 
   @override
@@ -62,7 +64,7 @@ class _WeightScreenState extends State<WeightScreen> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
 
               // Title
               Text(
@@ -77,59 +79,16 @@ class _WeightScreenState extends State<WeightScreen> {
 
               // Subtitle
               Text(
-                'This helps us create a personalized plan',
+                'Scroll to select your weight',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 40),
 
-              // Weight display
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 24,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    width: 2,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      _currentWeight.toString(),
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        fontSize: 72,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                        letterSpacing: -2,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'kg',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Wheel Picker
+              // Wheel Picker - Main focus
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
@@ -143,42 +102,60 @@ class _WeightScreenState extends State<WeightScreen> {
                       ),
                     ],
                   ),
-                  child: WheelPicker(
-                    builder: (context, index) {
-                      final weight = 30 + index;
-                      final isSelected = weight == _currentWeight;
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20),
 
-                      return Center(
-                        child: Text(
-                          '$weight',
-                          style: TextStyle(
-                            fontSize: isSelected ? 28 : 20,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.w500,
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.textSecondary.withValues(
-                                    alpha: 0.5,
-                                  ),
+                      // Unit label
+                      Text(
+                        'kg',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+
+                      // Picker
+                      Expanded(
+                        child: WheelPicker(
+                          builder: (context, index) {
+                            final weight = 30 + index;
+                            final isSelected = weight == _currentWeight;
+
+                            return Center(
+                              child: Text(
+                                '$weight',
+                                style: TextStyle(
+                                  fontSize: isSelected ? 42 : 24,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                ),
+                              ),
+                            );
+                          },
+                          itemCount: 171, // 30 to 200 kg
+                          initialIndex: _currentWeight - 30,
+                          onIndexChanged: (index, type) {
+                            setState(() {
+                              _currentWeight = 30 + index;
+                            });
+                          },
+                          style: WheelPickerStyle(
+                            itemExtent: 70,
+                            squeeze: 1.1,
+                            diameterRatio: 1.5,
+                            surroundingOpacity: 0.4,
+                            magnification: 1.2,
                           ),
                         ),
-                      );
-                    },
-                    itemCount: 171, // 30 to 200 kg
-                    initialIndex: _currentWeight - 30,
-                    onIndexChanged: (index, type) {
-                      setState(() {
-                        _currentWeight = 30 + index;
-                      });
-                    },
-                    style: WheelPickerStyle(
-                      itemExtent: 60,
-                      squeeze: 1.1,
-                      diameterRatio: 1.5,
-                      surroundingOpacity: 0.4,
-                      magnification: 1.2,
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),

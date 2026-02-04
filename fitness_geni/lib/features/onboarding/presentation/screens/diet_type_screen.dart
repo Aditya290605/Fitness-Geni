@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/selection_card.dart';
 import '../../../../core/widgets/custom_button.dart';
 
-/// Diet preference selection screen - Premium UI
+/// Diet preference selection screen - Compact premium UI
 class DietTypeScreen extends StatefulWidget {
   final String? initialDietType;
   final Function(String) onDietTypeSelected;
+  final VoidCallback? onBack;
 
   const DietTypeScreen({
     super.key,
     this.initialDietType,
     required this.onDietTypeSelected,
+    this.onBack,
   });
 
   @override
@@ -33,16 +34,15 @@ class _DietTypeScreenState extends State<DietTypeScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 16),
 
               // Icon
               Center(
                 child: Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -78,7 +78,7 @@ class _DietTypeScreenState extends State<DietTypeScreen> {
 
               // Subtitle
               Text(
-                'We\'ll recommend meals based on your preference',
+                'We\'ll recommend meals based on your choice',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -88,60 +88,172 @@ class _DietTypeScreenState extends State<DietTypeScreen> {
               const SizedBox(height: 32),
 
               // Options
-              Expanded(
-                child: ListView(
-                  children: [
-                    SelectionCard(
-                      icon: Icons.eco,
-                      title: 'Vegetarian',
-                      subtitle: 'Plant-based diet with eggs & dairy',
-                      isSelected: _selectedDiet == 'Vegetarian',
-                      onTap: () {
-                        setState(() {
-                          _selectedDiet = 'Vegetarian';
-                        });
-                      },
+              _buildCompactOption(
+                icon: Icons.eco,
+                title: 'Vegetarian',
+                subtitle: 'Plant-based with dairy & eggs',
+                value: 'Vegetarian',
+              ),
+
+              const SizedBox(height: 12),
+
+              _buildCompactOption(
+                icon: Icons.restaurant,
+                title: 'Non-Vegetarian',
+                subtitle: 'Includes meat & fish',
+                value: 'Non-Vegetarian',
+              ),
+
+              const SizedBox(height: 12),
+
+              _buildCompactOption(
+                icon: Icons.spa,
+                title: 'Vegan',
+                subtitle: 'Purely plant-based',
+                value: 'Vegan',
+              ),
+
+              const Spacer(),
+
+              // Navigation buttons
+              Row(
+                children: [
+                  if (widget.onBack != null) ...[
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: widget.onBack,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: BorderSide(color: AppColors.border, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Previous',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    SelectionCard(
-                      icon: Icons.restaurant,
-                      title: 'Non-Vegetarian',
-                      subtitle: 'Includes meat, fish & plant-based foods',
-                      isSelected: _selectedDiet == 'Non-Vegetarian',
-                      onTap: () {
-                        setState(() {
-                          _selectedDiet = 'Non-Vegetarian';
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    SelectionCard(
-                      icon: Icons.spa,
-                      title: 'Vegan',
-                      subtitle: 'Strictly plant-based diet',
-                      isSelected: _selectedDiet == 'Vegan',
-                      onTap: () {
-                        setState(() {
-                          _selectedDiet = 'Vegan';
-                        });
-                      },
-                    ),
+                    const SizedBox(width: 12),
                   ],
-                ),
+                  Expanded(
+                    child: CustomButton(
+                      text: 'Continue',
+                      onPressed: _selectedDiet != null
+                          ? () => widget.onDietTypeSelected(_selectedDiet!)
+                          : null,
+                    ),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 16),
-
-              CustomButton(
-                text: 'Continue',
-                onPressed: _selectedDiet != null
-                    ? () => widget.onDietTypeSelected(_selectedDiet!)
-                    : null,
-              ),
-
-              const SizedBox(height: 8),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String value,
+  }) {
+    final isSelected = _selectedDiet == value;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedDiet = value;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.15),
+                    AppColors.primary.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isSelected ? null : AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.2)
+                    : AppColors.border.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 18),
+              ),
+          ],
         ),
       ),
     );
