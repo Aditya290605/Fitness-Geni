@@ -3,10 +3,10 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_text_field.dart';
+import '../../../../core/widgets/animated_logo.dart';
 import '../../../../core/theme/app_colors.dart';
 
-/// Signup screen - User registration UI
-/// No actual authentication logic in MVP v1
+/// Signup screen - Clean and simple UI
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -30,7 +30,6 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  /// Validate name
   String? _validateName(String? value) {
     if (value == null || value.isEmpty) {
       return AppConstants.errorEmptyField;
@@ -38,7 +37,6 @@ class _SignupScreenState extends State<SignupScreen> {
     return null;
   }
 
-  /// Validate email format
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
       return AppConstants.errorEmptyField;
@@ -50,7 +48,6 @@ class _SignupScreenState extends State<SignupScreen> {
     return null;
   }
 
-  /// Validate password
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return AppConstants.errorEmptyField;
@@ -61,7 +58,6 @@ class _SignupScreenState extends State<SignupScreen> {
     return null;
   }
 
-  /// Validate confirm password
   String? _validateConfirmPassword(String? value) {
     if (value == null || value.isEmpty) {
       return AppConstants.errorEmptyField;
@@ -72,20 +68,26 @@ class _SignupScreenState extends State<SignupScreen> {
     return null;
   }
 
-  /// Handle signup button press
-  /// No actual authentication - just navigate to main screen for MVP v1
   void _handleSignup() {
     if (_formKey.currentState!.validate()) {
-      // In MVP v1, just navigate to main screen
-      // No actual authentication logic
-      context.go(AppConstants.routeMain);
+      // Debug: Print to verify this is called
+      debugPrint('✅ Signup form validated, navigating to onboarding...');
+      debugPrint('Route: ${AppConstants.routeOnboarding}');
+
+      // Navigate to onboarding
+      context.go(AppConstants.routeOnboarding);
+    } else {
+      debugPrint('❌ Signup form validation failed');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -97,29 +99,21 @@ class _SignupScreenState extends State<SignupScreen> {
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // App Branding
+                // Logo and branding
                 Center(
                   child: Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.fitness_center,
-                          size: 48,
-                          color: AppColors.primary,
-                        ),
-                      ),
+                      const AnimatedLogo(size: 80),
                       const SizedBox(height: 16),
                       Text(
                         AppConstants.appName,
-                        style: Theme.of(context).textTheme.displayLarge
-                            ?.copyWith(color: AppColors.primary),
+                        style: Theme.of(context).textTheme.displayMedium
+                            ?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -135,7 +129,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 32),
 
-                // Name Field
+                // Name field
                 CustomTextField(
                   labelText: AppConstants.name,
                   hintText: 'Enter your name',
@@ -147,7 +141,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 16),
 
-                // Email Field
+                // Email field
                 CustomTextField(
                   labelText: AppConstants.email,
                   hintText: 'Enter your email',
@@ -159,7 +153,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 16),
 
-                // Password Field
+                // Password field
                 CustomTextField(
                   labelText: AppConstants.password,
                   hintText: 'Create a password',
@@ -171,7 +165,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 16),
 
-                // Confirm Password Field
+                // Confirm password field
                 CustomTextField(
                   labelText: AppConstants.confirmPassword,
                   hintText: 'Confirm your password',
@@ -183,7 +177,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 32),
 
-                // Signup Button
+                // Signup button
                 CustomButton(
                   text: AppConstants.signup,
                   onPressed: _handleSignup,
@@ -191,7 +185,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 24),
 
-                // Login Link
+                // Login link
                 Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -200,6 +194,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         AppConstants.alreadyHaveAccount,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
+                      const SizedBox(width: 4),
                       GestureDetector(
                         onTap: () => context.pop(),
                         child: Text(

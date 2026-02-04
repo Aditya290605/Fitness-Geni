@@ -3,10 +3,10 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_text_field.dart';
+import '../../../../core/widgets/animated_logo.dart';
 import '../../../../core/theme/app_colors.dart';
 
-/// Login screen - Email and password login UI
-/// No actual authentication logic in MVP v1
+/// Login screen - Clean and simple UI
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -26,7 +26,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  /// Validate email format
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
       return AppConstants.errorEmptyField;
@@ -38,7 +37,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  /// Validate password
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return AppConstants.errorEmptyField;
@@ -49,12 +47,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  /// Handle login button press
-  /// No actual authentication - just navigate to main screen for MVP v1
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
-      // In MVP v1, just navigate to main screen
-      // No actual authentication logic
+      // Go directly to main app (onboarding only on signup)
       context.go(AppConstants.routeMain);
     }
   }
@@ -62,37 +57,30 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
 
-                // App Branding
+                // Logo and branding
                 Center(
                   child: Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.fitness_center,
-                          size: 48,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+                      const AnimatedLogo(size: 100),
+                      const SizedBox(height: 20),
                       Text(
                         AppConstants.appName,
-                        style: Theme.of(context).textTheme.displayLarge
-                            ?.copyWith(color: AppColors.primary),
+                        style: Theme.of(context).textTheme.displayMedium
+                            ?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -108,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 48),
 
-                // Email Field
+                // Email field
                 CustomTextField(
                   labelText: AppConstants.email,
                   hintText: 'Enter your email',
@@ -120,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 16),
 
-                // Password Field
+                // Password field
                 CustomTextField(
                   labelText: AppConstants.password,
                   hintText: 'Enter your password',
@@ -132,12 +120,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 32),
 
-                // Login Button
+                // Login button
                 CustomButton(text: AppConstants.login, onPressed: _handleLogin),
 
                 const SizedBox(height: 24),
 
-                // Sign Up Link
+                // Sign up link
                 Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -146,6 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         AppConstants.dontHaveAccount,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
+                      const SizedBox(width: 4),
                       GestureDetector(
                         onTap: () => context.push(AppConstants.routeSignup),
                         child: Text(
