@@ -1,122 +1,203 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:introduction_screen/introduction_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../data/models/user_profile_model.dart';
+import '../../data/services/onboarding_service.dart';
+import 'weight_screen.dart';
+import 'height_screen.dart';
+import 'gender_screen.dart';
+import 'diet_type_screen.dart';
+import 'fitness_goal_screen.dart';
 
-/// Onboarding screen - Shown only on first app launch
-/// Explains what the app does with 3-4 simple screens
-class OnboardingScreen extends StatelessWidget {
+/// Main onboarding screen - Clean and simple
+class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
-  /// Mark onboarding as completed and navigate to login
-  Future<void> _onDone(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AppConstants.keyOnboardingCompleted, true);
+  @override
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
+}
 
-    if (context.mounted) {
-      context.go(AppConstants.routeLogin);
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  final PageController _pageController = PageController();
+  final OnboardingService _onboardingService = OnboardingService();
+
+  int _currentPage = 0;
+  double? _weight;
+  double? _height;
+  String? _gender;
+  String? _dietType;
+  String? _fitnessGoal;
+
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('🎯 OnboardingScreen initialized');
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _nextPage() {
+    if (_currentPage < 4) {
+      debugPrint('➡️ Moving to page ${_currentPage + 1}');
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
     }
   }
 
-  /// Skip onboarding and go to login
-  void _onSkip(BuildContext context) => _onDone(context);
+  Future<void> _completeOnboarding() async {
+    debugPrint('🎉 Completing onboarding...');
+    debugPrint('Weight: $_weight, Height: $_height, Gender: $_gender');
+    debugPrint('Diet: $_dietType, Goal: $_fitnessGoal');
+
+    if (_weight == null ||
+        _height == null ||
+        _gender == null ||
+        _dietType == null ||
+        _fitnessGoal == null) {
+      debugPrint('❌ Missing data, cannot complete onboarding');
+      return;
+    }
+
+    final profile = UserProfile(
+      weight: _weight!,
+      height: _height!,
+      gender: _gender!,
+      dietType: _dietType!,
+      fitnessGoal: _fitnessGoal!,
+    );
+
+    debugPrint('💾 Saving profile...');
+    final success = await _onboardingService.saveUserProfile(profile);
+
+    if (success && mounted) {
+      debugPrint('✅ Profile saved, navigating to main app');
+      context.go(AppConstants.routeMain);
+    } else {
+      debugPrint('❌ Failed to save profile');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return IntroductionScreen(
-      pages: [
-        // Page 1: Welcome
-        PageViewModel(
-          title: 'Welcome to ${AppConstants.appName}',
-          body:
-              'Simple fitness & diet guidance made for you. No complexity, just results.',
-          image: _buildImage(Icons.waving_hand, AppColors.primary),
-          decoration: _getPageDecoration(),
-        ),
+    debugPrint('🔄 OnboardingScreen building, currentPage: $_currentPage');
 
-        // Page 2: Made for You
-        PageViewModel(
-          title: 'Made for Everyday People',
-          body:
-              'Not just for gym-goers. Designed for everyone who wants to be healthier and feel better.',
-          image: _buildImage(Icons.people_alt, AppColors.primaryDark),
-          decoration: _getPageDecoration(),
-        ),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Column(
+        children: [
+          // Progress indicator
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text(
+                    'Step ${_currentPage + 1} of 5',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: (_currentPage + 1) / 5,
+                      backgroundColor: AppColors.border,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
+                      ),
+                      minHeight: 6,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
-        // Page 3: Vegetarian Friendly
-        PageViewModel(
-          title: 'Vegetarian Friendly',
-          body:
-              'Specially designed with vegetarians in mind. Get personalized guidance that fits your lifestyle.',
-          image: _buildImage(Icons.eco, AppColors.success),
-          decoration: _getPageDecoration(),
-        ),
-      ],
+          // Pages
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              onPageChanged: (page) {
+                setState(() {
+                  _currentPage = page;
+                });
+                debugPrint('📄 Page changed to: $page');
+              },
+              children: [
+                // Step 1: Weight
+                WeightScreen(
+                  initialWeight: _weight,
+                  onWeightSelected: (weight) {
+                    debugPrint('⚖️ Weight selected: $weight kg');
+                    setState(() {
+                      _weight = weight;
+                    });
+                    _nextPage();
+                  },
+                ),
 
-      onDone: () => _onDone(context),
-      onSkip: () => _onSkip(context),
+                // Step 2: Height
+                HeightScreen(
+                  initialHeight: _height,
+                  onHeightSelected: (height) {
+                    debugPrint('📏 Height selected: $height cm');
+                    setState(() {
+                      _height = height;
+                    });
+                    _nextPage();
+                  },
+                ),
 
-      showSkipButton: true,
-      skip: Text(
-        AppConstants.skip,
-        style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                // Step 3: Gender
+                GenderScreen(
+                  initialGender: _gender,
+                  onGenderSelected: (gender) {
+                    debugPrint('👤 Gender selected: $gender');
+                    setState(() {
+                      _gender = gender;
+                    });
+                    _nextPage();
+                  },
+                ),
+
+                // Step 4: Diet Type
+                DietTypeScreen(
+                  initialDietType: _dietType,
+                  onDietTypeSelected: (dietType) {
+                    debugPrint('🥗 Diet type selected: $dietType');
+                    setState(() {
+                      _dietType = dietType;
+                    });
+                    _nextPage();
+                  },
+                ),
+
+                // Step 5: Fitness Goal
+                FitnessGoalScreen(
+                  initialGoal: _fitnessGoal,
+                  onGoalSelected: (goal) {
+                    debugPrint('🎯 Goal selected: $goal');
+                    setState(() {
+                      _fitnessGoal = goal;
+                    });
+                    _completeOnboarding();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      next: Icon(Icons.arrow_forward, color: AppColors.primary),
-      done: Text(
-        AppConstants.getStarted,
-        style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
-      ),
-
-      dotsDecorator: DotsDecorator(
-        size: const Size.square(10.0),
-        activeSize: const Size(20.0, 10.0),
-        activeColor: AppColors.primary,
-        color: AppColors.border,
-        spacing: const EdgeInsets.symmetric(horizontal: 3.0),
-        activeShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(25.0),
-        ),
-      ),
-
-      curve: Curves.easeInOut,
-      controlsMargin: const EdgeInsets.all(16),
-      globalBackgroundColor: AppColors.background,
-    );
-  }
-
-  /// Build icon image for onboarding page
-  Widget _buildImage(IconData icon, Color color) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(32),
-        ),
-        child: Icon(icon, size: 120, color: color),
-      ),
-    );
-  }
-
-  /// Get page decoration for consistent styling
-  PageDecoration _getPageDecoration() {
-    return PageDecoration(
-      titleTextStyle: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
-      ),
-      bodyTextStyle: TextStyle(
-        fontSize: 16,
-        color: AppColors.textSecondary,
-        height: 1.5,
-      ),
-      imagePadding: const EdgeInsets.only(top: 80, bottom: 40),
-      pageColor: AppColors.background,
-      bodyPadding: const EdgeInsets.symmetric(horizontal: 24),
-      titlePadding: const EdgeInsets.only(top: 16, bottom: 16),
     );
   }
 }
