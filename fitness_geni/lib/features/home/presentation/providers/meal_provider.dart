@@ -108,6 +108,11 @@ class MealNotifier extends StateNotifier<MealState> {
 
     state = state.copyWith(meals: resetMeals);
   }
+
+  /// Set new meals (for meal generation)
+  void setMeals(List<Meal> meals) {
+    state = state.copyWith(meals: meals);
+  }
 }
 
 /// Provider for meal state
