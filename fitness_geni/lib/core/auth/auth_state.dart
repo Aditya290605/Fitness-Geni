@@ -31,6 +31,14 @@ class Profile with _$Profile {
     required String id,
     required String name,
     DateTime? createdAt,
+    // Onboarding fields
+    int? age,
+    @JsonKey(name: 'height_cm') int? heightCm,
+    @JsonKey(name: 'weight_kg') int? weightKg,
+    String? gender,
+    @JsonKey(name: 'diet_type') String? dietType,
+    String? goal,
+    double? bmi,
   }) = _Profile;
 
   factory Profile.fromJson(Map<String, dynamic> json) =>
