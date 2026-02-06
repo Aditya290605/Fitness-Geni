@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
 import 'core/supabase/supabase_client.dart';
+import 'core/router/auth_redirect.dart';
 import 'features/splash/presentation/screens/splash_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/signup_screen.dart';
@@ -28,6 +29,9 @@ class FitnessGeniApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the router provider to get auth-aware routing
+    final router = ref.watch(routerProvider);
+
     return MaterialApp.router(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
@@ -35,44 +39,55 @@ class FitnessGeniApp extends ConsumerWidget {
       // Apply centralized app theme
       theme: AppTheme.lightTheme,
 
-      // Configure routing with GoRouter
-      routerConfig: _router,
+      // Configure routing with auth-aware GoRouter
+      routerConfig: router,
     );
   }
 }
 
-/// GoRouter configuration with all app routes
-final GoRouter _router = GoRouter(
-  initialLocation: AppConstants.routeSplash,
-  routes: [
-    // Splash Screen
-    GoRoute(
-      path: AppConstants.routeSplash,
-      builder: (context, state) => const SplashScreen(),
-    ),
+/// Router provider with auth-aware redirects
+///
+/// This provider creates a GoRouter that:
+/// - Redirects based on authentication status
+/// - Protects routes that require authentication
+/// - Handles onboarding completion checks
+final routerProvider = Provider<GoRouter>((ref) {
+  return GoRouter(
+    initialLocation: AppConstants.routeSplash,
 
-    // Login Screen
-    GoRoute(
-      path: AppConstants.routeLogin,
-      builder: (context, state) => const LoginScreen(),
-    ),
+    // Auth-aware redirect logic
+    redirect: (context, state) => authRedirect(context, state, ref),
 
-    // Signup Screen
-    GoRoute(
-      path: AppConstants.routeSignup,
-      builder: (context, state) => const SignupScreen(),
-    ),
+    routes: [
+      // Splash Screen
+      GoRoute(
+        path: AppConstants.routeSplash,
+        builder: (context, state) => const SplashScreen(),
+      ),
 
-    // Onboarding Screen
-    GoRoute(
-      path: AppConstants.routeOnboarding,
-      builder: (context, state) => const OnboardingScreen(),
-    ),
+      // Login Screen
+      GoRoute(
+        path: AppConstants.routeLogin,
+        builder: (context, state) => const LoginScreen(),
+      ),
 
-    // Main App (Bottom Navigation)
-    GoRoute(
-      path: AppConstants.routeMain,
-      builder: (context, state) => const MainNavigation(),
-    ),
-  ],
-);
+      // Signup Screen
+      GoRoute(
+        path: AppConstants.routeSignup,
+        builder: (context, state) => const SignupScreen(),
+      ),
+
+      // Onboarding Screen
+      GoRoute(
+        path: AppConstants.routeOnboarding,
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+
+      // Main App (Bottom Navigation)
+      GoRoute(
+        path: AppConstants.routeMain,
+        builder: (context, state) => const MainNavigation(),
+      ),
+    ],
+  );
+});

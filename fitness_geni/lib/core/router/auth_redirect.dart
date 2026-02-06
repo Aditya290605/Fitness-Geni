@@ -10,7 +10,7 @@ import '../constants/app_constants.dart';
 /// - Authentication status (logged in or not)
 /// - Onboarding completion (has profile data or not)
 /// - Current route attempting to access
-String? authRedirect(BuildContext context, GoRouterState state, WidgetRef ref) {
+String? authRedirect(BuildContext context, GoRouterState state, Ref ref) {
   // Read current auth state
   final isAuthenticated = ref.read(isAuthenticatedProvider);
   final currentProfile = ref.read(currentProfileProvider);
