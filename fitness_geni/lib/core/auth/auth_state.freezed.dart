@@ -660,8 +660,18 @@ Profile _$ProfileFromJson(Map<String, dynamic> json) {
 mixin _$Profile {
   String get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
-  @JsonKey(name: 'created_at')
-  DateTime? get createdAt => throw _privateConstructorUsedError;
+  DateTime? get createdAt =>
+      throw _privateConstructorUsedError; // Onboarding fields
+  int? get age => throw _privateConstructorUsedError;
+  @JsonKey(name: 'height_cm')
+  int? get heightCm => throw _privateConstructorUsedError;
+  @JsonKey(name: 'weight_kg')
+  int? get weightKg => throw _privateConstructorUsedError;
+  String? get gender => throw _privateConstructorUsedError;
+  @JsonKey(name: 'diet_type')
+  String? get dietType => throw _privateConstructorUsedError;
+  String? get goal => throw _privateConstructorUsedError;
+  double? get bmi => throw _privateConstructorUsedError;
 
   /// Serializes this Profile to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -680,7 +690,14 @@ abstract class $ProfileCopyWith<$Res> {
   $Res call({
     String id,
     String name,
-    @JsonKey(name: 'created_at') DateTime? createdAt,
+    DateTime? createdAt,
+    int? age,
+    @JsonKey(name: 'height_cm') int? heightCm,
+    @JsonKey(name: 'weight_kg') int? weightKg,
+    String? gender,
+    @JsonKey(name: 'diet_type') String? dietType,
+    String? goal,
+    double? bmi,
   });
 }
 
@@ -702,6 +719,13 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
     Object? id = null,
     Object? name = null,
     Object? createdAt = freezed,
+    Object? age = freezed,
+    Object? heightCm = freezed,
+    Object? weightKg = freezed,
+    Object? gender = freezed,
+    Object? dietType = freezed,
+    Object? goal = freezed,
+    Object? bmi = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -717,6 +741,34 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
                       as DateTime?,
+            age: freezed == age
+                ? _value.age
+                : age // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            heightCm: freezed == heightCm
+                ? _value.heightCm
+                : heightCm // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            weightKg: freezed == weightKg
+                ? _value.weightKg
+                : weightKg // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            gender: freezed == gender
+                ? _value.gender
+                : gender // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            dietType: freezed == dietType
+                ? _value.dietType
+                : dietType // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            goal: freezed == goal
+                ? _value.goal
+                : goal // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            bmi: freezed == bmi
+                ? _value.bmi
+                : bmi // ignore: cast_nullable_to_non_nullable
+                      as double?,
           )
           as $Val,
     );
@@ -734,7 +786,14 @@ abstract class _$$ProfileImplCopyWith<$Res> implements $ProfileCopyWith<$Res> {
   $Res call({
     String id,
     String name,
-    @JsonKey(name: 'created_at') DateTime? createdAt,
+    DateTime? createdAt,
+    int? age,
+    @JsonKey(name: 'height_cm') int? heightCm,
+    @JsonKey(name: 'weight_kg') int? weightKg,
+    String? gender,
+    @JsonKey(name: 'diet_type') String? dietType,
+    String? goal,
+    double? bmi,
   });
 }
 
@@ -755,6 +814,13 @@ class __$$ProfileImplCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? createdAt = freezed,
+    Object? age = freezed,
+    Object? heightCm = freezed,
+    Object? weightKg = freezed,
+    Object? gender = freezed,
+    Object? dietType = freezed,
+    Object? goal = freezed,
+    Object? bmi = freezed,
   }) {
     return _then(
       _$ProfileImpl(
@@ -770,6 +836,34 @@ class __$$ProfileImplCopyWithImpl<$Res>
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
                   as DateTime?,
+        age: freezed == age
+            ? _value.age
+            : age // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        heightCm: freezed == heightCm
+            ? _value.heightCm
+            : heightCm // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        weightKg: freezed == weightKg
+            ? _value.weightKg
+            : weightKg // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        gender: freezed == gender
+            ? _value.gender
+            : gender // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        dietType: freezed == dietType
+            ? _value.dietType
+            : dietType // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        goal: freezed == goal
+            ? _value.goal
+            : goal // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        bmi: freezed == bmi
+            ? _value.bmi
+            : bmi // ignore: cast_nullable_to_non_nullable
+                  as double?,
       ),
     );
   }
@@ -781,7 +875,14 @@ class _$ProfileImpl implements _Profile {
   const _$ProfileImpl({
     required this.id,
     required this.name,
-    @JsonKey(name: 'created_at') this.createdAt,
+    this.createdAt,
+    this.age,
+    @JsonKey(name: 'height_cm') this.heightCm,
+    @JsonKey(name: 'weight_kg') this.weightKg,
+    this.gender,
+    @JsonKey(name: 'diet_type') this.dietType,
+    this.goal,
+    this.bmi,
   });
 
   factory _$ProfileImpl.fromJson(Map<String, dynamic> json) =>
@@ -792,12 +893,29 @@ class _$ProfileImpl implements _Profile {
   @override
   final String name;
   @override
-  @JsonKey(name: 'created_at')
   final DateTime? createdAt;
+  // Onboarding fields
+  @override
+  final int? age;
+  @override
+  @JsonKey(name: 'height_cm')
+  final int? heightCm;
+  @override
+  @JsonKey(name: 'weight_kg')
+  final int? weightKg;
+  @override
+  final String? gender;
+  @override
+  @JsonKey(name: 'diet_type')
+  final String? dietType;
+  @override
+  final String? goal;
+  @override
+  final double? bmi;
 
   @override
   String toString() {
-    return 'Profile(id: $id, name: $name, createdAt: $createdAt)';
+    return 'Profile(id: $id, name: $name, createdAt: $createdAt, age: $age, heightCm: $heightCm, weightKg: $weightKg, gender: $gender, dietType: $dietType, goal: $goal, bmi: $bmi)';
   }
 
   @override
@@ -808,12 +926,34 @@ class _$ProfileImpl implements _Profile {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.age, age) || other.age == age) &&
+            (identical(other.heightCm, heightCm) ||
+                other.heightCm == heightCm) &&
+            (identical(other.weightKg, weightKg) ||
+                other.weightKg == weightKg) &&
+            (identical(other.gender, gender) || other.gender == gender) &&
+            (identical(other.dietType, dietType) ||
+                other.dietType == dietType) &&
+            (identical(other.goal, goal) || other.goal == goal) &&
+            (identical(other.bmi, bmi) || other.bmi == bmi));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, createdAt);
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    name,
+    createdAt,
+    age,
+    heightCm,
+    weightKg,
+    gender,
+    dietType,
+    goal,
+    bmi,
+  );
 
   /// Create a copy of Profile
   /// with the given fields replaced by the non-null parameter values.
@@ -833,7 +973,14 @@ abstract class _Profile implements Profile {
   const factory _Profile({
     required final String id,
     required final String name,
-    @JsonKey(name: 'created_at') final DateTime? createdAt,
+    final DateTime? createdAt,
+    final int? age,
+    @JsonKey(name: 'height_cm') final int? heightCm,
+    @JsonKey(name: 'weight_kg') final int? weightKg,
+    final String? gender,
+    @JsonKey(name: 'diet_type') final String? dietType,
+    final String? goal,
+    final double? bmi,
   }) = _$ProfileImpl;
 
   factory _Profile.fromJson(Map<String, dynamic> json) = _$ProfileImpl.fromJson;
@@ -843,8 +990,24 @@ abstract class _Profile implements Profile {
   @override
   String get name;
   @override
-  @JsonKey(name: 'created_at')
-  DateTime? get createdAt;
+  DateTime? get createdAt; // Onboarding fields
+  @override
+  int? get age;
+  @override
+  @JsonKey(name: 'height_cm')
+  int? get heightCm;
+  @override
+  @JsonKey(name: 'weight_kg')
+  int? get weightKg;
+  @override
+  String? get gender;
+  @override
+  @JsonKey(name: 'diet_type')
+  String? get dietType;
+  @override
+  String? get goal;
+  @override
+  double? get bmi;
 
   /// Create a copy of Profile
   /// with the given fields replaced by the non-null parameter values.

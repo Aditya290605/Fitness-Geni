@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/auth/profile_service.dart';
 import '../../data/models/user_profile_model.dart';
 import '../../data/services/onboarding_service.dart';
 import 'weight_screen.dart';
@@ -75,6 +77,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       return;
     }
 
+    // Get current user directly from Supabase (more reliable than stream provider)
+    debugPrint('🔍 Checking authentication state...');
+    final supabaseUser = Supabase.instance.client.auth.currentUser;
+
+    debugPrint('Supabase user: ${supabaseUser?.email ?? 'NULL'}');
+
+    if (supabaseUser == null) {
+      debugPrint('❌ No authenticated user found');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error: Please log in again'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        // Navigate back to login
+        context.go(AppConstants.routeLogin);
+      }
+      return;
+    }
+
     final profile = UserProfile(
       weight: _weight!,
       height: _height!,
@@ -83,14 +106,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       fitnessGoal: _fitnessGoal!,
     );
 
-    debugPrint('💾 Saving profile...');
-    final success = await _onboardingService.saveUserProfile(profile);
+    debugPrint('💾 Saving profile to Supabase for user: ${supabaseUser.id}');
 
-    if (success && mounted) {
-      debugPrint('✅ Profile saved, navigating to main app');
-      context.go(AppConstants.routeMain);
-    } else {
-      debugPrint('❌ Failed to save profile');
+    try {
+      // Save to Supabase
+      final profileService = ProfileService();
+      await profileService.updateProfile(
+        userId: supabaseUser.id,
+        weightKg: _weight!.toInt(),
+        heightCm: _height!.toInt(),
+        gender: _gender!,
+        dietType: _dietType!,
+        goal: _fitnessGoal!,
+      );
+
+      // Also save locally for backward compatibility
+      await _onboardingService.saveUserProfile(profile);
+
+      if (mounted) {
+        debugPrint('✅ Profile saved, navigating to main app');
+        context.go(AppConstants.routeMain);
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to save profile: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving profile: ${e.toString()}')),
+        );
+      }
     }
   }
 
