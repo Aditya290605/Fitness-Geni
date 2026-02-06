@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/animated_logo.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/auth/auth_provider.dart';
 
-/// Signup screen - Clean and simple UI
-class SignupScreen extends StatefulWidget {
+/// Signup screen - Clean and simple UI with Supabase auth
+class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -68,16 +71,37 @@ class _SignupScreenState extends State<SignupScreen> {
     return null;
   }
 
-  void _handleSignup() {
-    if (_formKey.currentState!.validate()) {
-      // Debug: Print to verify this is called
-      debugPrint('✅ Signup form validated, navigating to onboarding...');
-      debugPrint('Route: ${AppConstants.routeOnboarding}');
+  Future<void> _handleSignup() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      // Navigate to onboarding
-      context.go(AppConstants.routeOnboarding);
-    } else {
-      debugPrint('❌ Signup form validation failed');
+    setState(() => _isLoading = true);
+
+    try {
+      final authService = ref.read(authServiceProvider);
+      await authService.signup(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      // On success, navigate to onboarding
+      if (mounted) {
+        context.go(AppConstants.routeOnboarding);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -178,10 +202,12 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 32),
 
                 // Signup button
-                CustomButton(
-                  text: AppConstants.signup,
-                  onPressed: _handleSignup,
-                ),
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : CustomButton(
+                        text: AppConstants.signup,
+                        onPressed: _handleSignup,
+                      ),
 
                 const SizedBox(height: 24),
 
