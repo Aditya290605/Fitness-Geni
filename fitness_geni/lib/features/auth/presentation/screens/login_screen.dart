@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/custom_button.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/animated_logo.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/auth/auth_provider.dart';
 
-/// Login screen - Clean and simple UI
-class LoginScreen extends StatefulWidget {
+/// Login screen - Clean and simple UI with Supabase auth
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -47,10 +50,36 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  void _handleLogin() {
-    if (_formKey.currentState!.validate()) {
-      // Go directly to main app (onboarding only on signup)
-      context.go(AppConstants.routeMain);
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final authService = ref.read(authServiceProvider);
+      await authService.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      // Navigation handled automatically by auth state listener in main.dart
+      if (mounted) {
+        context.go(AppConstants.routeMain);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -121,7 +150,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
 
                 // Login button
-                CustomButton(text: AppConstants.login, onPressed: _handleLogin),
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : CustomButton(
+                        text: AppConstants.login,
+                        onPressed: _handleLogin,
+                      ),
 
                 const SizedBox(height: 24),
 

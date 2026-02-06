@@ -3,25 +3,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
+import 'core/supabase/supabase_client.dart';
 import 'features/splash/presentation/screens/splash_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/signup_screen.dart';
 import 'features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'shared/presentation/main_navigation.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Supabase
+  await initializeSupabase();
+
   runApp(
     // Wrap app with ProviderScope for Riverpod state management
     const ProviderScope(child: FitnessGeniApp()),
   );
 }
 
-/// Root application widget
-class FitnessGeniApp extends StatelessWidget {
+/// Root application widget with auth-aware routing
+class FitnessGeniApp extends ConsumerWidget {
   const FitnessGeniApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
