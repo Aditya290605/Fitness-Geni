@@ -84,8 +84,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         password: _passwordController.text,
       );
 
-      // On success, navigate to onboarding
       if (mounted) {
+        // Give auth stream a moment to process
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Navigate directly - the auth redirect will handle it
+        debugPrint('🚀 Navigating to onboarding after signup');
         context.go(AppConstants.routeOnboarding);
       }
     } catch (e) {

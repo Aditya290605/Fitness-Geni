@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/auth_provider.dart';
+import '../../../../core/services/meal_service.dart';
 import '../../domain/models/meal.dart';
+import 'meal_provider.dart';
 
 /// Mode for meal generation
 enum MealGenerationMode { ingredients, surprise }
@@ -52,7 +55,10 @@ class MealCreationState {
 
 /// Notifier for meal creation
 class MealCreationNotifier extends StateNotifier<MealCreationState> {
-  MealCreationNotifier() : super(const MealCreationState());
+  final Ref _ref;
+  final MealService _mealService = MealService();
+
+  MealCreationNotifier(this._ref) : super(const MealCreationState());
 
   void selectMode(MealGenerationMode mode) {
     state = state.copyWith(selectedMode: mode, ingredients: []);
@@ -73,15 +79,29 @@ class MealCreationNotifier extends StateNotifier<MealCreationState> {
   }
 
   Future<void> generateMeals() async {
-    state = state.copyWith(isGenerating: true);
+    try {
+      state = state.copyWith(isGenerating: true);
 
-    // Simulate API call delay
-    await Future.delayed(const Duration(milliseconds: 500));
+      // Simulate API call delay
+      await Future.delayed(const Duration(milliseconds: 500));
 
-    // Mock meal generation based on mode
-    final meals = _mockGenerateMeals();
+      // Mock meal generation based on mode
+      final meals = _mockGenerateMeals();
 
-    state = state.copyWith(generatedMeals: meals, isGenerating: false);
+      state = state.copyWith(generatedMeals: meals, isGenerating: false);
+
+      // Save to Supabase
+      final currentUser = _ref.read(currentUserProvider);
+      if (currentUser != null) {
+        await _mealService.saveMeals(currentUser.id, meals);
+
+        // Refresh meal provider to show new meals
+        _ref.read(mealProvider.notifier).loadMeals(force: true);
+      }
+    } catch (e) {
+      state = state.copyWith(isGenerating: false);
+      rethrow;
+    }
   }
 
   List<Meal> _mockGenerateMeals() {
@@ -215,5 +235,5 @@ class MealCreationNotifier extends StateNotifier<MealCreationState> {
 /// Provider for meal creation
 final mealCreationProvider =
     StateNotifierProvider<MealCreationNotifier, MealCreationState>((ref) {
-      return MealCreationNotifier();
+      return MealCreationNotifier(ref);
     });

@@ -115,6 +115,35 @@ class AuthService extends SupabaseService {
     }
   }
 
+  /// Refresh current user's profile from database
+  /// This is useful after profile updates to ensure state is in sync
+  Future<void> refreshProfile() async {
+    try {
+      final currentUser = supabase.auth.currentUser;
+      if (currentUser == null) {
+        debugPrint('❌ No current user to refresh profile for');
+        return;
+      }
+
+      debugPrint('🔄 Refreshing profile for user: ${currentUser.id}');
+
+      // Force fetch latest profile from database
+      final profileData = await supabase
+          .from('profiles')
+          .select()
+          .eq('id', currentUser.id)
+          .single();
+
+      debugPrint('✅ Profile refreshed: ${profileData['goal']}');
+
+      // Trigger auth state change to update all listeners
+      // This is a workaround to force the auth stream to emit the new profile
+      await supabase.auth.refreshSession();
+    } catch (e) {
+      debugPrint('❌ Error refreshing profile: $e');
+    }
+  }
+
   /// Restore session on app launch
   Future<AuthState> restoreSession() async {
     try {
@@ -174,11 +203,41 @@ class AuthService extends SupabaseService {
 
       try {
         // Fetch profile when auth state changes
+        // Use maybeSingle() to handle case where profile doesn't exist yet
         final profileData = await supabase
             .from('profiles')
             .select()
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
+
+        // If profile doesn't exist yet (e.g., during signup race condition)
+        // create a temporary profile or wait for it to be created
+        if (profileData == null) {
+          debugPrint(
+            '⚠️ Profile not found for user ${user.id}, might be in creation...',
+          );
+
+          // Retry once after a short delay to handle race condition
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          final retryProfileData = await supabase
+              .from('profiles')
+              .select()
+              .eq('id', user.id)
+              .maybeSingle();
+
+          if (retryProfileData == null) {
+            debugPrint('❌ Profile still not found after retry');
+            // Still return authenticated with null profile
+            // Router will handle onboarding vs main based on profile.goal
+            final authUser = User(id: user.id, email: user.email ?? '');
+            return AuthState.authenticated(user: authUser, profile: null);
+          }
+
+          final profile = Profile.fromJson(retryProfileData);
+          final authUser = User(id: user.id, email: user.email ?? '');
+          return AuthState.authenticated(user: authUser, profile: profile);
+        }
 
         final profile = Profile.fromJson(profileData);
         final authUser = User(id: user.id, email: user.email ?? '');

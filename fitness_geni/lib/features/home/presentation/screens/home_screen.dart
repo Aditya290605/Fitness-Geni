@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/auth/auth_provider.dart';
 import '../providers/meal_provider.dart';
 import '../widgets/daily_progress_bar.dart';
 import '../widgets/meal_card.dart';
@@ -23,6 +24,18 @@ class HomeScreen extends ConsumerWidget {
     final mealState = ref.watch(mealProvider);
     final mealNotifier = ref.read(mealProvider.notifier);
 
+    // Lazy load meals when home screen is accessed
+    // This runs after auth is ready, preventing logout bug
+    if (!mealState.isLoading &&
+        mealState.meals.isEmpty &&
+        mealState.error == null) {
+      Future.microtask(() => mealNotifier.loadMeals());
+    }
+
+    // Get real user name
+    final currentProfile = ref.watch(currentProfileProvider);
+    final userName = currentProfile?.name ?? 'there';
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -35,9 +48,9 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     const SizedBox(height: 8),
 
-                    // Header
+                    // Header with personalized greeting
                     Text(
-                      _getGreeting(),
+                      '${_getGreeting()}, $userName',
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),

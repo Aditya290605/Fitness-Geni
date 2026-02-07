@@ -20,19 +20,19 @@ mixin _$AuthState {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() loading,
-    required TResult Function(User user, Profile profile) authenticated,
+    required TResult Function(User user, Profile? profile) authenticated,
     required TResult Function() unauthenticated,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? loading,
-    TResult? Function(User user, Profile profile)? authenticated,
+    TResult? Function(User user, Profile? profile)? authenticated,
     TResult? Function()? unauthenticated,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? loading,
-    TResult Function(User user, Profile profile)? authenticated,
+    TResult Function(User user, Profile? profile)? authenticated,
     TResult Function()? unauthenticated,
     required TResult orElse(),
   }) => throw _privateConstructorUsedError;
@@ -121,7 +121,7 @@ class _$AuthStateLoadingImpl implements AuthStateLoading {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() loading,
-    required TResult Function(User user, Profile profile) authenticated,
+    required TResult Function(User user, Profile? profile) authenticated,
     required TResult Function() unauthenticated,
   }) {
     return loading();
@@ -131,7 +131,7 @@ class _$AuthStateLoadingImpl implements AuthStateLoading {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? loading,
-    TResult? Function(User user, Profile profile)? authenticated,
+    TResult? Function(User user, Profile? profile)? authenticated,
     TResult? Function()? unauthenticated,
   }) {
     return loading?.call();
@@ -141,7 +141,7 @@ class _$AuthStateLoadingImpl implements AuthStateLoading {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? loading,
-    TResult Function(User user, Profile profile)? authenticated,
+    TResult Function(User user, Profile? profile)? authenticated,
     TResult Function()? unauthenticated,
     required TResult orElse(),
   }) {
@@ -197,10 +197,10 @@ abstract class _$$AuthStateAuthenticatedImplCopyWith<$Res> {
     $Res Function(_$AuthStateAuthenticatedImpl) then,
   ) = __$$AuthStateAuthenticatedImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({User user, Profile profile});
+  $Res call({User user, Profile? profile});
 
   $UserCopyWith<$Res> get user;
-  $ProfileCopyWith<$Res> get profile;
+  $ProfileCopyWith<$Res>? get profile;
 }
 
 /// @nodoc
@@ -216,17 +216,17 @@ class __$$AuthStateAuthenticatedImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? user = null, Object? profile = null}) {
+  $Res call({Object? user = null, Object? profile = freezed}) {
     return _then(
       _$AuthStateAuthenticatedImpl(
         user: null == user
             ? _value.user
             : user // ignore: cast_nullable_to_non_nullable
                   as User,
-        profile: null == profile
+        profile: freezed == profile
             ? _value.profile
             : profile // ignore: cast_nullable_to_non_nullable
-                  as Profile,
+                  as Profile?,
       ),
     );
   }
@@ -245,8 +245,12 @@ class __$$AuthStateAuthenticatedImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $ProfileCopyWith<$Res> get profile {
-    return $ProfileCopyWith<$Res>(_value.profile, (value) {
+  $ProfileCopyWith<$Res>? get profile {
+    if (_value.profile == null) {
+      return null;
+    }
+
+    return $ProfileCopyWith<$Res>(_value.profile!, (value) {
       return _then(_value.copyWith(profile: value));
     });
   }
@@ -255,15 +259,12 @@ class __$$AuthStateAuthenticatedImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$AuthStateAuthenticatedImpl implements AuthStateAuthenticated {
-  const _$AuthStateAuthenticatedImpl({
-    required this.user,
-    required this.profile,
-  });
+  const _$AuthStateAuthenticatedImpl({required this.user, this.profile});
 
   @override
   final User user;
   @override
-  final Profile profile;
+  final Profile? profile;
 
   @override
   String toString() {
@@ -298,7 +299,7 @@ class _$AuthStateAuthenticatedImpl implements AuthStateAuthenticated {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() loading,
-    required TResult Function(User user, Profile profile) authenticated,
+    required TResult Function(User user, Profile? profile) authenticated,
     required TResult Function() unauthenticated,
   }) {
     return authenticated(user, profile);
@@ -308,7 +309,7 @@ class _$AuthStateAuthenticatedImpl implements AuthStateAuthenticated {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? loading,
-    TResult? Function(User user, Profile profile)? authenticated,
+    TResult? Function(User user, Profile? profile)? authenticated,
     TResult? Function()? unauthenticated,
   }) {
     return authenticated?.call(user, profile);
@@ -318,7 +319,7 @@ class _$AuthStateAuthenticatedImpl implements AuthStateAuthenticated {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? loading,
-    TResult Function(User user, Profile profile)? authenticated,
+    TResult Function(User user, Profile? profile)? authenticated,
     TResult Function()? unauthenticated,
     required TResult orElse(),
   }) {
@@ -366,11 +367,11 @@ class _$AuthStateAuthenticatedImpl implements AuthStateAuthenticated {
 abstract class AuthStateAuthenticated implements AuthState {
   const factory AuthStateAuthenticated({
     required final User user,
-    required final Profile profile,
+    final Profile? profile,
   }) = _$AuthStateAuthenticatedImpl;
 
   User get user;
-  Profile get profile;
+  Profile? get profile;
 
   /// Create a copy of AuthState
   /// with the given fields replaced by the non-null parameter values.
@@ -424,7 +425,7 @@ class _$AuthStateUnauthenticatedImpl implements AuthStateUnauthenticated {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() loading,
-    required TResult Function(User user, Profile profile) authenticated,
+    required TResult Function(User user, Profile? profile) authenticated,
     required TResult Function() unauthenticated,
   }) {
     return unauthenticated();
@@ -434,7 +435,7 @@ class _$AuthStateUnauthenticatedImpl implements AuthStateUnauthenticated {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? loading,
-    TResult? Function(User user, Profile profile)? authenticated,
+    TResult? Function(User user, Profile? profile)? authenticated,
     TResult? Function()? unauthenticated,
   }) {
     return unauthenticated?.call();
@@ -444,7 +445,7 @@ class _$AuthStateUnauthenticatedImpl implements AuthStateUnauthenticated {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? loading,
-    TResult Function(User user, Profile profile)? authenticated,
+    TResult Function(User user, Profile? profile)? authenticated,
     TResult Function()? unauthenticated,
     required TResult orElse(),
   }) {
