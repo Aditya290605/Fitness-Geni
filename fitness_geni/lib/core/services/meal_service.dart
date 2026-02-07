@@ -113,7 +113,7 @@ class MealService extends SupabaseService {
             .from('meals')
             .select('id')
             .eq('name', meal.name)
-            .eq('meal_time', meal.time)
+            .eq('meal_time', _mapMealTimeToDb(meal.time))
             .maybeSingle();
 
         String mealId;
@@ -122,11 +122,16 @@ class MealService extends SupabaseService {
           mealId = existingMeal['id'] as String;
         } else {
           // Create new meal in catalog
+          final dbTime = _mapMealTimeToDb(meal.time);
+          debugPrint(
+            '🔍 Inserting meal with time: "$dbTime" (original: "${meal.time}")',
+          );
+
           final newMeal = await supabase
               .from('meals')
               .insert({
                 'name': meal.name,
-                'meal_time': meal.time,
+                'meal_time': dbTime,
                 'ingredients': meal.ingredients,
                 'recipe_steps': meal.recipeSteps,
                 'created_by': userId,
@@ -141,7 +146,7 @@ class MealService extends SupabaseService {
         await supabase.from('daily_plan_meals').insert({
           'daily_plan_id': dailyPlan['id'],
           'meal_id': mealId,
-          'meal_time': meal.time,
+          'meal_time': _mapMealTimeToDb(meal.time),
           'is_completed': false,
         });
       }
@@ -208,5 +213,24 @@ class MealService extends SupabaseService {
       debugPrint('❌ Error deleting meals: $e');
       throw Exception(parseError(e));
     }
+  }
+
+  /// Map Gemini's meal times to database format
+  /// breakfast -> morning, lunch -> afternoon, dinner -> night
+  String _mapMealTimeToDb(String time) {
+    final Map<String, String> timeMap = {
+      'breakfast': 'morning',
+      'lunch': 'afternoon',
+      'dinner': 'night',
+    };
+    return timeMap[time.toLowerCase()] ?? time;
+  }
+
+  @override
+  String parseError(dynamic error) {
+    if (error is Exception) {
+      return error.toString().replaceAll('Exception: ', '');
+    }
+    return error.toString();
   }
 }
