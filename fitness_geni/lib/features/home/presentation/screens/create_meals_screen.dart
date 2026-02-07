@@ -33,14 +33,51 @@ class _CreateMealsScreenState extends ConsumerState<CreateMealsScreen> {
   }
 
   Future<void> _generateMeals() async {
-    await ref.read(mealCreationProvider.notifier).generateMeals();
+    final state = ref.read(mealCreationProvider);
 
-    if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const MealsPreviewScreen()),
-      );
+    // Validation for ingredients mode
+    if (state.selectedMode == MealGenerationMode.ingredients &&
+        state.ingredients.length < 5) {
+      _showWarning('Please add at least 5 ingredients to generate meals');
+      return;
     }
+
+    try {
+      await ref.read(mealCreationProvider.notifier).generateMeals();
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MealsPreviewScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showError('Failed to generate meals. Please try again.');
+      }
+    }
+  }
+
+  void _showWarning(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.orange,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -117,11 +154,33 @@ class _CreateMealsScreenState extends ConsumerState<CreateMealsScreen> {
             // Generate button
             Padding(
               padding: const EdgeInsets.all(20),
-              child: CustomButton(
-                text: state.isGenerating ? 'Generating...' : 'Generate Meals',
-                onPressed: state.canGenerate && !state.isGenerating
-                    ? _generateMeals
-                    : null,
+              child: Column(
+                children: [
+                  // Show ingredient count hint
+                  if (state.selectedMode == MealGenerationMode.ingredients)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        '${state.ingredients.length}/5 ingredients added (minimum)',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: state.ingredients.length >= 5
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                          fontWeight: state.ingredients.length >= 5
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  CustomButton(
+                    text: state.isGenerating
+                        ? 'Generating with AI...'
+                        : 'Generate Meals',
+                    onPressed: state.canGenerate && !state.isGenerating
+                        ? _generateMeals
+                        : null,
+                  ),
+                ],
               ),
             ),
           ],

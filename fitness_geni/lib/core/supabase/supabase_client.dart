@@ -8,21 +8,23 @@ late final SupabaseClient supabase;
 /// Initialize Supabase client with configuration
 Future<void> initializeSupabase() async {
   try {
-    // Ensure SupabaseConfig is initialized if its values are used directly
-    // If supabaseUrl and supabaseAnonKey are global or static, this might not be needed here.
-    // Assuming they are accessible directly or via SupabaseConfig.
-    await SupabaseConfig.initialize(); // Keep this if supabaseUrl/anonKey come from SupabaseConfig
+    // Initialize config
+    await SupabaseConfig.initialize();
 
+    // Initialize Supabase with auth persistence
     await Supabase.initialize(
-      url: SupabaseConfig.supabaseUrl, // Use SupabaseConfig values
-      anonKey: SupabaseConfig.supabaseAnonKey, // Use SupabaseConfig values
+      url: SupabaseConfig.supabaseUrl,
+      anonKey: SupabaseConfig.supabaseAnonKey,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce, // More secure auth flow
+        autoRefreshToken: true, // Auto-refresh expired tokens
+      ),
     );
 
     // Set global client instance
-    supabase =
-        Supabase.instance.client; // Re-add this line to set the global client
+    supabase = Supabase.instance.client;
 
-    debugPrint('✅ Supabase initialized successfully');
+    debugPrint('✅ Supabase initialized with auth persistence');
   } catch (e) {
     debugPrint('❌ Failed to initialize Supabase: $e');
     throw Exception('Supabase initialization failed');
