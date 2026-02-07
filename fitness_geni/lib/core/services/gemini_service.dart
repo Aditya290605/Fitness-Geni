@@ -17,7 +17,46 @@ class GeminiService {
       generationConfig: GenerationConfig(
         temperature: GeminiConfig.temperature,
         topP: GeminiConfig.topP,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 8192, // Increased for complete responses
+        responseMimeType: 'application/json', // Force JSON responses
+        responseSchema: Schema.object(
+          properties: {
+            'meals': Schema.array(
+              items: Schema.object(
+                properties: {
+                  'name': Schema.string(description: 'Meal name'),
+                  'time': Schema.enumString(
+                    enumValues: ['breakfast', 'lunch', 'dinner'],
+                  ),
+                  'ingredients': Schema.array(items: Schema.string()),
+                  'recipeSteps': Schema.array(items: Schema.string()),
+                  'nutrition': Schema.object(
+                    properties: {
+                      'calories': Schema.integer(),
+                      'protein': Schema.number(),
+                      'carbs': Schema.number(),
+                      'fats': Schema.number(),
+                    },
+                    requiredProperties: [
+                      'calories',
+                      'protein',
+                      'carbs',
+                      'fats',
+                    ],
+                  ),
+                },
+                requiredProperties: [
+                  'name',
+                  'time',
+                  'ingredients',
+                  'recipeSteps',
+                  'nutrition',
+                ],
+              ),
+            ),
+          },
+          requiredProperties: ['meals'],
+        ),
       ),
     );
   }
@@ -78,70 +117,35 @@ INGREDIENT FLEXIBILITY:
 ''';
 
     return '''
-You are a professional nutritionist and chef AI. Generate a personalized daily meal plan.
+Generate 3 meals in JSON format:
 
-USER PROFILE:
-- Age: ${profile.age ?? 25} years
-- Height: ${profile.heightCm ?? 170}cm, Weight: ${profile.weightKg ?? 70}kg
-- BMI: ${profile.bmi?.toStringAsFixed(1) ?? '23.0'}
-- Goal: $goal
-- Diet Type: $dietType (${dietType == 'veg' ? 'vegetarian only' : 'can include non-vegetarian'})
-
-DAILY NUTRITION TARGETS:
-- Total Calories: ${dailyCalories}kcal (distribute across 3 meals)
-- Total Protein: ${dailyProtein}g
-- Total Carbs: ${dailyCarbs}g  
-- Total Fats: ${dailyFats}g
+Profile: Age ${profile.age ?? 25}, ${profile.weightKg ?? 70}kg, ${profile.heightCm ?? 170}cm, Goal: $goal, Diet: $dietType
+Targets: ${dailyCalories}kcal, ${dailyProtein}g protein, ${dailyCarbs}g carbs, ${dailyFats}g fat
 
 $ingredientsSection
 
-MEAL REQUIREMENTS:
-- Generate exactly 3 meals: Breakfast, Lunch, Dinner
-- Each meal should be:
-  * Budget-friendly (use common, affordable ingredients)
-  * Easy to prepare (max 30 minutes cooking time)
-  * Nutritionally balanced
-  * Culturally appropriate for Indian cuisine
-  * Delicious and appealing
+Requirements:
+- 3 meals: Breakfast (30% cal), Lunch (40% cal), Dinner (30% cal)
+- Budget-friendly, quick (under 30min), Indian cuisine
+- Each meal: max 5 ingredients, max 3 recipe steps
+- time field MUST be: "breakfast", "lunch", or "dinner" (lowercase only)
 
-NUTRITION DISTRIBUTION:
-- Breakfast: ~30% of daily calories
-- Lunch: ~40% of daily calories
-- Dinner: ~30% of daily calories
-
-OUTPUT FORMAT (STRICT JSON - NO MARKDOWN, NO CODE BLOCKS):
+JSON Format (NO markdown, NO explanations):
 {
   "meals": [
     {
       "name": "Meal Name",
-      "time": "Morning",
-      "ingredients": ["ingredient 1 with quantity", "ingredient 2 with quantity", ...],
-      "recipeSteps": ["step 1", "step 2", ...],
-      "nutrition": {
-        "calories": <number>,
-        "protein": <number in grams>,
-        "carbs": <number in grams>,
-        "fats": <number in grams>
-      }
+      "time": "breakfast",
+      "ingredients": ["item with qty"],
+      "recipeSteps": ["brief step"],
+      "nutrition": {"calories": 500, "protein": 20, "carbs": 60, "fats": 15}
     },
-    {
-      "name": "Meal Name",
-      "time": "Afternoon",
-      "ingredients": [...],
-      "recipeSteps": [...],
-      "nutrition": {...}
-    },
-    {
-      "name": "Meal Name",
-      "time": "Night",
-      "ingredients": [...],
-      "recipeSteps": [...],
-      "nutrition": {...}
-    }
+    {"name": "Lunch", "time": "lunch", "ingredients": [], "recipeSteps": [], "nutrition": {}},
+    {"name": "Dinner", "time": "dinner", "ingredients": [], "recipeSteps": [], "nutrition": {}}
   ]
 }
 
-CRITICAL: Return ONLY the JSON object. No markdown, no code blocks, no explanations. Just the raw JSON.
+Return ONLY the JSON object.
 ''';
   }
 
