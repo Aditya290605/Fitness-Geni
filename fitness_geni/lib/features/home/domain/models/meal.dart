@@ -9,6 +9,12 @@ class Meal {
   final String? userId; // For Supabase tracking
   final String? date; // For Supabase tracking
 
+  // Nutrition information (from AI)
+  final int? calories;
+  final double? protein; // in grams
+  final double? carbs; // in grams
+  final double? fats; // in grams
+
   const Meal({
     required this.id,
     required this.name,
@@ -18,6 +24,10 @@ class Meal {
     this.isDone = false,
     this.userId,
     this.date,
+    this.calories,
+    this.protein,
+    this.carbs,
+    this.fats,
   });
 
   Meal copyWith({
@@ -29,6 +39,10 @@ class Meal {
     bool? isDone,
     String? userId,
     String? date,
+    int? calories,
+    double? protein,
+    double? carbs,
+    double? fats,
   }) {
     return Meal(
       id: id ?? this.id,
@@ -39,6 +53,10 @@ class Meal {
       isDone: isDone ?? this.isDone,
       userId: userId ?? this.userId,
       date: date ?? this.date,
+      calories: calories ?? this.calories,
+      protein: protein ?? this.protein,
+      carbs: carbs ?? this.carbs,
+      fats: fats ?? this.fats,
     );
   }
 
@@ -53,6 +71,10 @@ class Meal {
       'recipe_steps': recipeSteps,
       'is_done': isDone,
       'date': date ?? this.date,
+      if (calories != null) 'calories': calories,
+      if (protein != null) 'protein': protein,
+      if (carbs != null) 'carbs': carbs,
+      if (fats != null) 'fats': fats,
     };
   }
 
@@ -67,6 +89,10 @@ class Meal {
       isDone: json['is_done'] as bool? ?? false,
       userId: json['user_id'] as String?,
       date: json['date'] as String?,
+      calories: json['calories'] as int?,
+      protein: (json['protein'] as num?)?.toDouble(),
+      carbs: (json['carbs'] as num?)?.toDouble(),
+      fats: (json['fats'] as num?)?.toDouble(),
     );
   }
 }

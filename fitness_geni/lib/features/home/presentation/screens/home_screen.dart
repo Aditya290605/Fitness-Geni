@@ -163,7 +163,12 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             OutlinedButton.icon(
               onPressed: () {
-                // TODO: Implement meal generation
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CreateMealsScreen(),
+                  ),
+                );
               },
               icon: const Icon(Icons.auto_awesome),
               label: const Text('Generate Today\'s Plan'),

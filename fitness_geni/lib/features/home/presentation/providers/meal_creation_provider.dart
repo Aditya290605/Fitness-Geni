@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_provider.dart';
 import '../../../../core/services/meal_service.dart';
+import '../../../../core/services/gemini_service.dart';
 import '../../domain/models/meal.dart';
 import 'meal_provider.dart';
 
@@ -13,18 +14,20 @@ class MealCreationState {
   final List<String> ingredients;
   final List<Meal>? generatedMeals;
   final bool isGenerating;
+  final String? error;
 
   const MealCreationState({
     this.selectedMode,
     this.ingredients = const [],
     this.generatedMeals,
     this.isGenerating = false,
+    this.error,
   });
 
   bool get canGenerate {
     if (selectedMode == null) return false;
     if (selectedMode == MealGenerationMode.ingredients) {
-      return ingredients.isNotEmpty;
+      return ingredients.length >= 5; // Require at least 5 ingredients
     }
     return true; // Surprise mode always ready
   }
@@ -34,12 +37,14 @@ class MealCreationState {
     List<String>? ingredients,
     List<Meal>? generatedMeals,
     bool? isGenerating,
+    String? error,
   }) {
     return MealCreationState(
       selectedMode: selectedMode ?? this.selectedMode,
       ingredients: ingredients ?? this.ingredients,
       generatedMeals: generatedMeals ?? this.generatedMeals,
       isGenerating: isGenerating ?? this.isGenerating,
+      error: error,
     );
   }
 
@@ -51,17 +56,22 @@ class MealCreationState {
       isGenerating: isGenerating,
     );
   }
+
+  MealCreationState clearError() {
+    return copyWith(error: null);
+  }
 }
 
 /// Notifier for meal creation
 class MealCreationNotifier extends StateNotifier<MealCreationState> {
   final Ref _ref;
   final MealService _mealService = MealService();
+  final GeminiService _geminiService = GeminiService();
 
   MealCreationNotifier(this._ref) : super(const MealCreationState());
 
   void selectMode(MealGenerationMode mode) {
-    state = state.copyWith(selectedMode: mode, ingredients: []);
+    state = state.copyWith(selectedMode: mode, ingredients: [], error: null);
   }
 
   void addIngredient(String ingredient) {
@@ -69,7 +79,10 @@ class MealCreationNotifier extends StateNotifier<MealCreationState> {
     final trimmed = ingredient.trim();
     if (trimmed.isEmpty || state.ingredients.contains(trimmed)) return;
 
-    state = state.copyWith(ingredients: [...state.ingredients, trimmed]);
+    state = state.copyWith(
+      ingredients: [...state.ingredients, trimmed],
+      error: null,
+    );
   }
 
   void removeIngredient(String ingredient) {
@@ -78,15 +91,24 @@ class MealCreationNotifier extends StateNotifier<MealCreationState> {
     );
   }
 
+  /// Generate meals using Gemini AI
   Future<void> generateMeals() async {
     try {
-      state = state.copyWith(isGenerating: true);
+      state = state.copyWith(isGenerating: true, error: null);
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Get user profile
+      final currentProfile = _ref.read(currentProfileProvider);
+      if (currentProfile == null) {
+        throw Exception('User profile not found');
+      }
 
-      // Mock meal generation based on mode
-      final meals = _mockGenerateMeals();
+      // Call Gemini AI
+      final meals = await _geminiService.generateMeals(
+        userProfile: currentProfile,
+        ingredients: state.selectedMode == MealGenerationMode.ingredients
+            ? state.ingredients
+            : null,
+      );
 
       state = state.copyWith(generatedMeals: meals, isGenerating: false);
 
@@ -99,134 +121,15 @@ class MealCreationNotifier extends StateNotifier<MealCreationState> {
         _ref.read(mealProvider.notifier).loadMeals(force: true);
       }
     } catch (e) {
-      state = state.copyWith(isGenerating: false);
+      state = state.copyWith(
+        isGenerating: false,
+        error: e.toString().replaceAll('Exception: ', ''),
+      );
       rethrow;
     }
   }
 
-  List<Meal> _mockGenerateMeals() {
-    if (state.selectedMode == MealGenerationMode.ingredients) {
-      return _generateFromIngredients();
-    } else {
-      return _generateSurpriseMeals();
-    }
-  }
-
-  List<Meal> _generateFromIngredients() {
-    // Mock generation using ingredients
-    final ingredientsText = state.ingredients.take(2).join(' & ');
-
-    return [
-      Meal(
-        id: 'morning_${DateTime.now().millisecondsSinceEpoch}',
-        name: '$ingredientsText Breakfast Bowl',
-        time: 'Morning',
-        ingredients: [
-          ...state.ingredients.take(3),
-          '1 cup milk',
-          '1 tbsp honey',
-        ],
-        recipeSteps: [
-          'Prepare your ${state.ingredients.first}',
-          'Combine all ingredients in a bowl',
-          'Mix well and enjoy fresh',
-        ],
-      ),
-      Meal(
-        id: 'afternoon_${DateTime.now().millisecondsSinceEpoch}',
-        name: 'Fresh $ingredientsText Salad',
-        time: 'Afternoon',
-        ingredients: [
-          ...state.ingredients.take(4),
-          '2 cups mixed greens',
-          '2 tbsp olive oil dressing',
-        ],
-        recipeSteps: [
-          'Wash and chop your ingredients',
-          'Toss everything in a large bowl',
-          'Drizzle with dressing and serve',
-        ],
-      ),
-      Meal(
-        id: 'night_${DateTime.now().millisecondsSinceEpoch}',
-        name: 'Cooked ${state.ingredients.first} Delight',
-        time: 'Night',
-        ingredients: [
-          ...state.ingredients.take(3),
-          '1 cup rice or quinoa',
-          'Herbs and spices to taste',
-        ],
-        recipeSteps: [
-          'Cook your base (rice or quinoa)',
-          'Sauté your main ingredients',
-          'Combine and season to perfection',
-        ],
-      ),
-    ];
-  }
-
-  List<Meal> _generateSurpriseMeals() {
-    // Mock balanced surprise meals
-    return [
-      const Meal(
-        id: 'surprise_morning',
-        name: 'Avocado Toast with Eggs',
-        time: 'Morning',
-        ingredients: [
-          '2 slices whole grain bread',
-          '1 ripe avocado',
-          '2 eggs',
-          'Cherry tomatoes',
-          'Salt, pepper, chili flakes',
-        ],
-        recipeSteps: [
-          'Toast the bread until golden',
-          'Mash avocado with salt and pepper',
-          'Fry or poach eggs to your liking',
-          'Spread avocado, top with eggs and tomatoes',
-          'Sprinkle with chili flakes and enjoy',
-        ],
-      ),
-      const Meal(
-        id: 'surprise_afternoon',
-        name: 'Mediterranean Chickpea Bowl',
-        time: 'Afternoon',
-        ingredients: [
-          '1 cup cooked chickpeas',
-          '1 cup cucumber, diced',
-          '1/2 cup cherry tomatoes',
-          '1/4 cup feta cheese',
-          '2 tbsp olive oil & lemon dressing',
-        ],
-        recipeSteps: [
-          'Combine chickpeas, cucumber, and tomatoes',
-          'Crumble feta cheese on top',
-          'Drizzle with olive oil and lemon',
-          'Toss gently and serve chilled',
-        ],
-      ),
-      const Meal(
-        id: 'surprise_night',
-        name: 'Teriyaki Salmon with Broccoli',
-        time: 'Night',
-        ingredients: [
-          '150g salmon fillet',
-          '2 cups broccoli florets',
-          '3 tbsp teriyaki sauce',
-          '1 tsp sesame oil',
-          'Sesame seeds for garnish',
-        ],
-        recipeSteps: [
-          'Marinate salmon in teriyaki sauce for 10 min',
-          'Steam broccoli until tender-crisp',
-          'Pan-sear salmon 3-4 min each side',
-          'Drizzle broccoli with sesame oil',
-          'Plate together and garnish with sesame seeds',
-        ],
-      ),
-    ];
-  }
-
+  /// Reset state
   void reset() {
     state = const MealCreationState();
   }
