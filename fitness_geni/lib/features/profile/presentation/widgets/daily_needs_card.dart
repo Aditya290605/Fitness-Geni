@@ -10,32 +10,50 @@ class DailyNeedsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        // Calories
-        Expanded(
-          child: _buildNeedCard(
-            context,
-            icon: Icons.local_fire_department,
-            label: 'CALORIES',
-            value: profile.dailyCalories.toString(),
-            unit: 'kcal',
-            color: const Color(0xFFEF4444), // Red for fire
-          ),
+        // Row 1: Calories and Protein
+        Row(
+          children: [
+            // Calories
+            Expanded(
+              child: _buildNeedCard(
+                context,
+                icon: Icons.local_fire_department,
+                label: 'CALORIES',
+                value: profile.dailyCalories.toString(),
+                unit: 'kcal',
+                color: const Color(0xFFEF4444), // Red for fire
+              ),
+            ),
+
+            const SizedBox(width: 16),
+
+            // Protein
+            Expanded(
+              child: _buildNeedCard(
+                context,
+                icon: Icons.fitness_center,
+                label: 'PROTEIN',
+                value: profile.dailyProteinG.round().toString(),
+                unit: 'g',
+                color: AppColors.primary,
+              ),
+            ),
+          ],
         ),
 
-        const SizedBox(width: 16),
+        const SizedBox(height: 16),
 
-        // Protein
-        Expanded(
-          child: _buildNeedCard(
-            context,
-            icon: Icons.fitness_center,
-            label: 'PROTEIN',
-            value: profile.dailyProteinG.round().toString(),
-            unit: 'g',
-            color: AppColors.primary,
-          ),
+        // Row 2: Carbs (full width)
+        _buildNeedCard(
+          context,
+          icon: Icons.bakery_dining_outlined,
+          label: 'CARBOHYDRATES',
+          value:
+              '${(profile.dailyCalories * 0.5 / 4).round()}', // Rough estimate: 50% of calories from carbs
+          unit: 'g',
+          color: const Color(0xFFF59E0B), // Amber for carbs
         ),
       ],
     );

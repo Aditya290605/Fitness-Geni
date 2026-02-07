@@ -172,9 +172,7 @@ Return ONLY the JSON object.
         final nutrition = meal['nutrition'] as Map<String, dynamic>;
 
         return Meal(
-          id:
-              DateTime.now().millisecondsSinceEpoch.toString() +
-              meal['time'].toString().substring(0, 1),
+          id: '', // Will be populated by database UUID
           name: meal['name'] as String,
           time: meal['time'] as String,
           ingredients: (meal['ingredients'] as List).cast<String>(),

@@ -26,6 +26,10 @@ _$ProfileImpl _$$ProfileImplFromJson(Map<String, dynamic> json) =>
       dietType: json['diet_type'] as String?,
       goal: json['goal'] as String?,
       bmi: (json['bmi'] as num?)?.toDouble(),
+      dailyCalories: (json['daily_calories'] as num?)?.toInt(),
+      dailyProtein: (json['daily_protein'] as num?)?.toInt(),
+      dailyCarbs: (json['daily_carbs'] as num?)?.toInt(),
+      dailyFats: (json['daily_fats'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$ProfileImplToJson(_$ProfileImpl instance) =>
@@ -40,4 +44,8 @@ Map<String, dynamic> _$$ProfileImplToJson(_$ProfileImpl instance) =>
       'diet_type': instance.dietType,
       'goal': instance.goal,
       'bmi': instance.bmi,
+      'daily_calories': instance.dailyCalories,
+      'daily_protein': instance.dailyProtein,
+      'daily_carbs': instance.dailyCarbs,
+      'daily_fats': instance.dailyFats,
     };

@@ -672,7 +672,16 @@ mixin _$Profile {
   @JsonKey(name: 'diet_type')
   String? get dietType => throw _privateConstructorUsedError;
   String? get goal => throw _privateConstructorUsedError;
-  double? get bmi => throw _privateConstructorUsedError;
+  double? get bmi =>
+      throw _privateConstructorUsedError; // Daily nutrition targets
+  @JsonKey(name: 'daily_calories')
+  int? get dailyCalories => throw _privateConstructorUsedError;
+  @JsonKey(name: 'daily_protein')
+  int? get dailyProtein => throw _privateConstructorUsedError;
+  @JsonKey(name: 'daily_carbs')
+  int? get dailyCarbs => throw _privateConstructorUsedError;
+  @JsonKey(name: 'daily_fats')
+  int? get dailyFats => throw _privateConstructorUsedError;
 
   /// Serializes this Profile to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -699,6 +708,10 @@ abstract class $ProfileCopyWith<$Res> {
     @JsonKey(name: 'diet_type') String? dietType,
     String? goal,
     double? bmi,
+    @JsonKey(name: 'daily_calories') int? dailyCalories,
+    @JsonKey(name: 'daily_protein') int? dailyProtein,
+    @JsonKey(name: 'daily_carbs') int? dailyCarbs,
+    @JsonKey(name: 'daily_fats') int? dailyFats,
   });
 }
 
@@ -727,6 +740,10 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
     Object? dietType = freezed,
     Object? goal = freezed,
     Object? bmi = freezed,
+    Object? dailyCalories = freezed,
+    Object? dailyProtein = freezed,
+    Object? dailyCarbs = freezed,
+    Object? dailyFats = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -770,6 +787,22 @@ class _$ProfileCopyWithImpl<$Res, $Val extends Profile>
                 ? _value.bmi
                 : bmi // ignore: cast_nullable_to_non_nullable
                       as double?,
+            dailyCalories: freezed == dailyCalories
+                ? _value.dailyCalories
+                : dailyCalories // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            dailyProtein: freezed == dailyProtein
+                ? _value.dailyProtein
+                : dailyProtein // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            dailyCarbs: freezed == dailyCarbs
+                ? _value.dailyCarbs
+                : dailyCarbs // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            dailyFats: freezed == dailyFats
+                ? _value.dailyFats
+                : dailyFats // ignore: cast_nullable_to_non_nullable
+                      as int?,
           )
           as $Val,
     );
@@ -795,6 +828,10 @@ abstract class _$$ProfileImplCopyWith<$Res> implements $ProfileCopyWith<$Res> {
     @JsonKey(name: 'diet_type') String? dietType,
     String? goal,
     double? bmi,
+    @JsonKey(name: 'daily_calories') int? dailyCalories,
+    @JsonKey(name: 'daily_protein') int? dailyProtein,
+    @JsonKey(name: 'daily_carbs') int? dailyCarbs,
+    @JsonKey(name: 'daily_fats') int? dailyFats,
   });
 }
 
@@ -822,6 +859,10 @@ class __$$ProfileImplCopyWithImpl<$Res>
     Object? dietType = freezed,
     Object? goal = freezed,
     Object? bmi = freezed,
+    Object? dailyCalories = freezed,
+    Object? dailyProtein = freezed,
+    Object? dailyCarbs = freezed,
+    Object? dailyFats = freezed,
   }) {
     return _then(
       _$ProfileImpl(
@@ -865,6 +906,22 @@ class __$$ProfileImplCopyWithImpl<$Res>
             ? _value.bmi
             : bmi // ignore: cast_nullable_to_non_nullable
                   as double?,
+        dailyCalories: freezed == dailyCalories
+            ? _value.dailyCalories
+            : dailyCalories // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        dailyProtein: freezed == dailyProtein
+            ? _value.dailyProtein
+            : dailyProtein // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        dailyCarbs: freezed == dailyCarbs
+            ? _value.dailyCarbs
+            : dailyCarbs // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        dailyFats: freezed == dailyFats
+            ? _value.dailyFats
+            : dailyFats // ignore: cast_nullable_to_non_nullable
+                  as int?,
       ),
     );
   }
@@ -884,6 +941,10 @@ class _$ProfileImpl implements _Profile {
     @JsonKey(name: 'diet_type') this.dietType,
     this.goal,
     this.bmi,
+    @JsonKey(name: 'daily_calories') this.dailyCalories,
+    @JsonKey(name: 'daily_protein') this.dailyProtein,
+    @JsonKey(name: 'daily_carbs') this.dailyCarbs,
+    @JsonKey(name: 'daily_fats') this.dailyFats,
   });
 
   factory _$ProfileImpl.fromJson(Map<String, dynamic> json) =>
@@ -913,10 +974,23 @@ class _$ProfileImpl implements _Profile {
   final String? goal;
   @override
   final double? bmi;
+  // Daily nutrition targets
+  @override
+  @JsonKey(name: 'daily_calories')
+  final int? dailyCalories;
+  @override
+  @JsonKey(name: 'daily_protein')
+  final int? dailyProtein;
+  @override
+  @JsonKey(name: 'daily_carbs')
+  final int? dailyCarbs;
+  @override
+  @JsonKey(name: 'daily_fats')
+  final int? dailyFats;
 
   @override
   String toString() {
-    return 'Profile(id: $id, name: $name, createdAt: $createdAt, age: $age, heightCm: $heightCm, weightKg: $weightKg, gender: $gender, dietType: $dietType, goal: $goal, bmi: $bmi)';
+    return 'Profile(id: $id, name: $name, createdAt: $createdAt, age: $age, heightCm: $heightCm, weightKg: $weightKg, gender: $gender, dietType: $dietType, goal: $goal, bmi: $bmi, dailyCalories: $dailyCalories, dailyProtein: $dailyProtein, dailyCarbs: $dailyCarbs, dailyFats: $dailyFats)';
   }
 
   @override
@@ -937,7 +1011,15 @@ class _$ProfileImpl implements _Profile {
             (identical(other.dietType, dietType) ||
                 other.dietType == dietType) &&
             (identical(other.goal, goal) || other.goal == goal) &&
-            (identical(other.bmi, bmi) || other.bmi == bmi));
+            (identical(other.bmi, bmi) || other.bmi == bmi) &&
+            (identical(other.dailyCalories, dailyCalories) ||
+                other.dailyCalories == dailyCalories) &&
+            (identical(other.dailyProtein, dailyProtein) ||
+                other.dailyProtein == dailyProtein) &&
+            (identical(other.dailyCarbs, dailyCarbs) ||
+                other.dailyCarbs == dailyCarbs) &&
+            (identical(other.dailyFats, dailyFats) ||
+                other.dailyFats == dailyFats));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -954,6 +1036,10 @@ class _$ProfileImpl implements _Profile {
     dietType,
     goal,
     bmi,
+    dailyCalories,
+    dailyProtein,
+    dailyCarbs,
+    dailyFats,
   );
 
   /// Create a copy of Profile
@@ -982,6 +1068,10 @@ abstract class _Profile implements Profile {
     @JsonKey(name: 'diet_type') final String? dietType,
     final String? goal,
     final double? bmi,
+    @JsonKey(name: 'daily_calories') final int? dailyCalories,
+    @JsonKey(name: 'daily_protein') final int? dailyProtein,
+    @JsonKey(name: 'daily_carbs') final int? dailyCarbs,
+    @JsonKey(name: 'daily_fats') final int? dailyFats,
   }) = _$ProfileImpl;
 
   factory _Profile.fromJson(Map<String, dynamic> json) = _$ProfileImpl.fromJson;
@@ -1008,7 +1098,19 @@ abstract class _Profile implements Profile {
   @override
   String? get goal;
   @override
-  double? get bmi;
+  double? get bmi; // Daily nutrition targets
+  @override
+  @JsonKey(name: 'daily_calories')
+  int? get dailyCalories;
+  @override
+  @JsonKey(name: 'daily_protein')
+  int? get dailyProtein;
+  @override
+  @JsonKey(name: 'daily_carbs')
+  int? get dailyCarbs;
+  @override
+  @JsonKey(name: 'daily_fats')
+  int? get dailyFats;
 
   /// Create a copy of Profile
   /// with the given fields replaced by the non-null parameter values.

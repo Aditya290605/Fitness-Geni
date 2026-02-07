@@ -29,7 +29,11 @@ class MealService extends SupabaseService {
               name,
               meal_time,
               ingredients,
-              recipe_steps
+              recipe_steps,
+              calories,
+              protein,
+              carbs,
+              fats
             )
           ''')
           .eq('daily_plan_id', dailyPlan['id'])
@@ -39,8 +43,19 @@ class MealService extends SupabaseService {
 
       return (response as List).map((json) {
         final mealData = json['meals'] as Map<String, dynamic>;
+        final dailyPlanMealId = json['id'] as String?;
+
+        debugPrint(
+          '🔍 Daily plan meal ID: "$dailyPlanMealId" for meal: ${mealData['name']}',
+        );
+
+        if (dailyPlanMealId == null || dailyPlanMealId.isEmpty) {
+          debugPrint('⚠️ WARNING: Empty or null ID detected!');
+          debugPrint('Full JSON: $json');
+        }
+
         return Meal(
-          id: json['id'] as String, // daily_plan_meals ID
+          id: dailyPlanMealId ?? '', // daily_plan_meals ID
           name: mealData['name'] as String,
           time: json['meal_time'] as String,
           ingredients: (mealData['ingredients'] as List).cast<String>(),
@@ -48,6 +63,10 @@ class MealService extends SupabaseService {
           isDone: json['is_completed'] as bool? ?? false,
           userId: userId,
           date: today,
+          calories: mealData['calories'] as int?,
+          protein: (mealData['protein'] as num?)?.toDouble(),
+          carbs: (mealData['carbs'] as num?)?.toDouble(),
+          fats: (mealData['fats'] as num?)?.toDouble(),
         );
       }).toList();
     } catch (e) {
@@ -135,6 +154,10 @@ class MealService extends SupabaseService {
                 'ingredients': meal.ingredients,
                 'recipe_steps': meal.recipeSteps,
                 'created_by': userId,
+                'calories': meal.calories,
+                'protein': meal.protein,
+                'carbs': meal.carbs,
+                'fats': meal.fats,
               })
               .select('id')
               .single();
@@ -142,13 +165,18 @@ class MealService extends SupabaseService {
           mealId = newMeal['id'] as String;
         }
 
-        // Link meal to today's plan
-        await supabase.from('daily_plan_meals').insert({
-          'daily_plan_id': dailyPlan['id'],
-          'meal_id': mealId,
-          'meal_time': _mapMealTimeToDb(meal.time),
-          'is_completed': false,
-        });
+        // Link meal to today's plan and get the daily_plan_meals ID
+        await supabase
+            .from('daily_plan_meals')
+            .insert({
+              'daily_plan_id': dailyPlan['id'],
+              'meal_id': mealId,
+              'meal_time': _mapMealTimeToDb(meal.time),
+              'is_completed': false,
+            })
+            .select('id');
+        // Note: We don't need to track the daily_plan_meals ID here
+        // It will be fetched properly when we retrieve meals
       }
 
       debugPrint('✅ Successfully saved ${meals.length} meals');
@@ -158,13 +186,42 @@ class MealService extends SupabaseService {
     }
   }
 
-  /// Mark a meal as done or undone
+  /// Mark a meal as done or undone, and update daily nutrition tracking
   Future<void> markMealDone(String dailyPlanMealId, bool isDone) async {
     try {
       debugPrint(
         '✏️ Marking daily_plan_meal $dailyPlanMealId as done: $isDone',
       );
 
+      // Get the meal data with nutrition info
+      final mealData = await supabase
+          .from('daily_plan_meals')
+          .select('''
+            id,
+            daily_plan_id,
+            meals (
+              calories,
+              protein,
+              carbs,
+              fats
+            )
+          ''')
+          .eq('id', dailyPlanMealId)
+          .single();
+
+      final dailyPlanId = mealData['daily_plan_id'] as String;
+      final meal = mealData['meals'] as Map<String, dynamic>;
+
+      final calories = (meal['calories'] as int?) ?? 0;
+      final protein = (meal['protein'] as num?)?.toDouble() ?? 0.0;
+      final carbs = (meal['carbs'] as num?)?.toDouble() ?? 0.0;
+      final fats = (meal['fats'] as num?)?.toDouble() ?? 0.0;
+
+      debugPrint(
+        '📊 Meal nutrition: ${calories}kcal, ${protein}g protein, ${carbs}g carbs, ${fats}g fats',
+      );
+
+      // Update meal completion status
       final updateData = {
         'is_completed': isDone,
         if (isDone) 'completed_at': DateTime.now().toIso8601String(),
@@ -175,10 +232,62 @@ class MealService extends SupabaseService {
           .update(updateData)
           .eq('id', dailyPlanMealId);
 
-      debugPrint('✅ Meal status updated');
+      // Update daily plan nutrition tracking
+      if (isDone) {
+        // Add nutrition when marking as done
+        await supabase.rpc(
+          'increment_daily_nutrition',
+          params: {
+            'plan_id': dailyPlanId,
+            'cal': calories,
+            'prot': protein,
+            'carb': carbs,
+            'fat': fats,
+          },
+        );
+        debugPrint('✅ Added nutrition to daily totals');
+      } else {
+        // Subtract nutrition when unmarking
+        await supabase.rpc(
+          'decrement_daily_nutrition',
+          params: {
+            'plan_id': dailyPlanId,
+            'cal': calories,
+            'prot': protein,
+            'carb': carbs,
+            'fat': fats,
+          },
+        );
+        debugPrint('✅ Subtracted nutrition from daily totals');
+      }
+
+      debugPrint('✅ Meal status and nutrition tracking updated');
     } catch (e) {
       debugPrint('❌ Error updating meal status: $e');
       throw Exception(parseError(e));
+    }
+  }
+
+  /// Get daily nutrition progress (consumed vs targets)
+  Future<Map<String, dynamic>> getDailyNutritionProgress(String userId) async {
+    try {
+      final today = DateTime.now().toIso8601String().split('T')[0];
+
+      // Get daily plan with consumed nutrition
+      final dailyPlan = await _getOrCreateDailyPlan(userId, today);
+
+      final consumed = {
+        'calories': dailyPlan['consumed_calories'] ?? 0,
+        'protein': (dailyPlan['consumed_protein'] as num?)?.toDouble() ?? 0.0,
+        'carbs': (dailyPlan['consumed_carbs'] as num?)?.toDouble() ?? 0.0,
+        'fats': (dailyPlan['consumed_fats'] as num?)?.toDouble() ?? 0.0,
+      };
+
+      debugPrint('📊 Daily nutrition consumed: $consumed');
+      return consumed;
+    } catch (e) {
+      debugPrint('❌ Error fetching nutrition progress: $e');
+      return {'calories': 0, 'protein': 0.0, 'carbs': 0.0, 'fats': 0.0};
     }
   }
 

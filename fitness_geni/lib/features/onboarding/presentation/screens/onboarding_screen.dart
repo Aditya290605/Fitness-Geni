@@ -13,6 +13,7 @@ import 'height_screen.dart';
 import 'gender_screen.dart';
 import 'diet_type_screen.dart';
 import 'fitness_goal_screen.dart';
+import 'age_screen.dart';
 
 /// Main onboarding screen - Clean and simple
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -30,6 +31,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _isSaving = false;
   double? _weight;
   double? _height;
+  int? _age;
   String? _gender;
   String? _dietType;
   String? _fitnessGoal;
@@ -47,7 +49,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _nextPage() {
-    if (_currentPage < 4) {
+    if (_currentPage < 5) {
       debugPrint('➡️ Moving to page ${_currentPage + 1}');
       _pageController.nextPage(
         duration: const Duration(milliseconds: 250),
@@ -73,6 +75,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     if (_weight == null ||
         _height == null ||
+        _age == null ||
         _gender == null ||
         _dietType == null ||
         _fitnessGoal == null) {
@@ -107,6 +110,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       final profile = UserProfile(
         weight: _weight!,
         height: _height!,
+        age: _age!,
         gender: _gender!,
         dietType: _dietType!,
         fitnessGoal: _fitnessGoal!,
@@ -118,6 +122,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       final profileService = ProfileService();
       await profileService.updateProfile(
         userId: supabaseUser.id,
+        age: _age!,
         weightKg: _weight!.toInt(),
         heightCm: _height!.toInt(),
         gender: _gender!,
@@ -173,7 +178,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   child: Column(
                     children: [
                       Text(
-                        'Step ${_currentPage + 1} of 5',
+                        'Step ${_currentPage + 1} of 6',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
@@ -183,7 +188,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: LinearProgressIndicator(
-                          value: (_currentPage + 1) / 5,
+                          value: (_currentPage + 1) / 6,
                           backgroundColor: AppColors.border,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             AppColors.primary,
@@ -234,7 +239,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       onBack: _previousPage,
                     ),
 
-                    // Step 3: Gender
+                    // Step 3: Age
+                    AgeScreen(
+                      initialAge: _age,
+                      onAgeSelected: (age) {
+                        debugPrint('🎂 Age selected: $age');
+                        setState(() {
+                          _age = age;
+                        });
+                        _nextPage();
+                      },
+                      onBack: _previousPage,
+                    ),
+
+                    // Step 4: Gender
                     GenderScreen(
                       initialGender: _gender,
                       onGenderSelected: (gender) {
@@ -247,7 +265,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       onBack: _previousPage,
                     ),
 
-                    // Step 4: Diet Type
+                    // Step 5: Diet Type
                     DietTypeScreen(
                       initialDietType: _dietType,
                       onDietTypeSelected: (dietType) {
@@ -260,7 +278,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       onBack: _previousPage,
                     ),
 
-                    // Step 5: Fitness Goal
+                    // Step 6: Fitness Goal
                     FitnessGoalScreen(
                       initialGoal: _fitnessGoal,
                       isLoading: _isSaving,

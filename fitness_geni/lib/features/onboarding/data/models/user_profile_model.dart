@@ -4,6 +4,7 @@ import 'dart:convert';
 class UserProfile {
   final double weight; // in kg
   final double height; // in cm
+  final int age; // in years
   final String gender; // Male, Female, Other
   final String dietType; // Vegetarian, Non-Vegetarian
   final String fitnessGoal; // Weight Loss, Bulking, Maintain
@@ -11,6 +12,7 @@ class UserProfile {
   const UserProfile({
     required this.weight,
     required this.height,
+    required this.age,
     required this.gender,
     required this.dietType,
     required this.fitnessGoal,
@@ -21,6 +23,7 @@ class UserProfile {
     return {
       'weight': weight,
       'height': height,
+      'age': age,
       'gender': gender,
       'dietType': dietType,
       'fitnessGoal': fitnessGoal,
@@ -32,6 +35,7 @@ class UserProfile {
     return UserProfile(
       weight: (json['weight'] as num).toDouble(),
       height: (json['height'] as num).toDouble(),
+      age: json['age'] as int,
       gender: json['gender'] as String,
       dietType: json['dietType'] as String,
       fitnessGoal: json['fitnessGoal'] as String,
@@ -50,6 +54,7 @@ class UserProfile {
   UserProfile copyWith({
     double? weight,
     double? height,
+    int? age,
     String? gender,
     String? dietType,
     String? fitnessGoal,
@@ -57,6 +62,7 @@ class UserProfile {
     return UserProfile(
       weight: weight ?? this.weight,
       height: height ?? this.height,
+      age: age ?? this.age,
       gender: gender ?? this.gender,
       dietType: dietType ?? this.dietType,
       fitnessGoal: fitnessGoal ?? this.fitnessGoal,

@@ -39,6 +39,11 @@ class Profile with _$Profile {
     @JsonKey(name: 'diet_type') String? dietType,
     String? goal,
     double? bmi,
+    // Daily nutrition targets
+    @JsonKey(name: 'daily_calories') int? dailyCalories,
+    @JsonKey(name: 'daily_protein') int? dailyProtein,
+    @JsonKey(name: 'daily_carbs') int? dailyCarbs,
+    @JsonKey(name: 'daily_fats') int? dailyFats,
   }) = _Profile;
 
   factory Profile.fromJson(Map<String, dynamic> json) =>
