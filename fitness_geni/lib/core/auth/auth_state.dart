@@ -10,7 +10,7 @@ class AuthState with _$AuthState {
 
   const factory AuthState.authenticated({
     required User user,
-    required Profile profile,
+    Profile? profile,
   }) = AuthStateAuthenticated;
 
   const factory AuthState.unauthenticated() = AuthStateUnauthenticated;

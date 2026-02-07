@@ -15,6 +15,12 @@ String? authRedirect(BuildContext context, GoRouterState state, Ref ref) {
   final isAuthenticated = ref.read(isAuthenticatedProvider);
   final currentProfile = ref.read(currentProfileProvider);
 
+  // DEBUG: Print auth state
+  debugPrint('🔍 AUTH REDIRECT - Route: ${state.matchedLocation}');
+  debugPrint('🔍 AUTH REDIRECT - isAuthenticated: $isAuthenticated');
+  debugPrint('🔍 AUTH REDIRECT - currentProfile: $currentProfile');
+  debugPrint('🔍 AUTH REDIRECT - profile.goal: ${currentProfile?.goal}');
+
   // Determine what route user is trying to access
   final isGoingToSplash = state.matchedLocation == AppConstants.routeSplash;
   final isGoingToLogin = state.matchedLocation == AppConstants.routeLogin;
@@ -32,12 +38,16 @@ String? authRedirect(BuildContext context, GoRouterState state, Ref ref) {
   // UNAUTHENTICATED USERS
   // ========================================
   if (!isAuthenticated) {
-    // Allow access to login and signup screens only
-    if (isGoingToLogin || isGoingToSignup) {
+    debugPrint('🔍 AUTH REDIRECT - User is NOT authenticated');
+    // Allow access to login, signup, AND onboarding screens
+    // Onboarding is allowed because during signup, there's a brief moment
+    // where the user is created but the auth stream hasn't updated yet
+    if (isGoingToLogin || isGoingToSignup || isGoingToOnboarding) {
       return null; // No redirect needed
     }
 
     // Redirect to login for any other route
+    debugPrint('🔍 AUTH REDIRECT - Redirecting to login');
     return AppConstants.routeLogin;
   }
 

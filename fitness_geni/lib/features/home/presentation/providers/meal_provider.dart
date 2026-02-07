@@ -1,103 +1,85 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/auth_provider.dart';
+import '../../../../core/services/meal_service.dart';
 import '../../domain/models/meal.dart';
 
 /// State for managing today's meals
 class MealState {
   final List<Meal> meals;
   final bool isLoading;
+  final String? error;
 
-  const MealState({required this.meals, this.isLoading = false});
+  const MealState({required this.meals, this.isLoading = false, this.error});
 
   int get completedCount => meals.where((m) => m.isDone).length;
   int get totalMeals => meals.length;
   double get progress => totalMeals > 0 ? completedCount / totalMeals : 0.0;
 
-  MealState copyWith({List<Meal>? meals, bool? isLoading}) {
+  MealState copyWith({List<Meal>? meals, bool? isLoading, String? error}) {
     return MealState(
       meals: meals ?? this.meals,
       isLoading: isLoading ?? this.isLoading,
+      error: error,
     );
   }
 }
 
 /// Notifier for meal state management
 class MealNotifier extends StateNotifier<MealState> {
-  MealNotifier() : super(_initialState());
+  final MealService _mealService = MealService();
+  final Ref _ref;
+  bool _hasLoaded = false;
 
-  static MealState _initialState() {
-    return MealState(
-      meals: [
-        const Meal(
-          id: 'morning',
-          name: 'Oatmeal with Berries',
-          time: 'Morning',
-          ingredients: [
-            '1 cup rolled oats',
-            '1 cup almond milk',
-            '1/2 cup mixed berries',
-            '1 tbsp honey',
-            'Pinch of cinnamon',
-          ],
-          recipeSteps: [
-            'Bring almond milk to a boil in a small pot',
-            'Add oats and reduce heat to medium',
-            'Cook for 5 minutes, stirring occasionally',
-            'Top with berries, honey, and cinnamon',
-            'Serve warm and enjoy!',
-          ],
-        ),
-        const Meal(
-          id: 'afternoon',
-          name: 'Grilled Chicken Salad',
-          time: 'Afternoon',
-          ingredients: [
-            '150g grilled chicken breast',
-            '2 cups mixed greens',
-            '1/2 cup cherry tomatoes',
-            '1/4 cucumber, sliced',
-            '2 tbsp olive oil dressing',
-          ],
-          recipeSteps: [
-            'Season chicken with salt, pepper, and herbs',
-            'Grill chicken until cooked through (6-8 min per side)',
-            'Slice chicken into strips',
-            'Toss greens, tomatoes, and cucumber in a bowl',
-            'Top with chicken and drizzle with dressing',
-          ],
-        ),
-        const Meal(
-          id: 'night',
-          name: 'Quinoa & Roasted Vegetables',
-          time: 'Night',
-          ingredients: [
-            '1 cup cooked quinoa',
-            '1 cup mixed vegetables (bell peppers, zucchini, carrots)',
-            '2 tbsp olive oil',
-            '1 tsp herbs (rosemary, thyme)',
-            'Salt and pepper to taste',
-          ],
-          recipeSteps: [
-            'Preheat oven to 400°F (200°C)',
-            'Chop vegetables into bite-sized pieces',
-            'Toss vegetables with olive oil, herbs, salt, and pepper',
-            'Roast for 25-30 minutes until tender',
-            'Serve over cooked quinoa',
-          ],
-        ),
-      ],
-    );
+  // Don't load meals in constructor - this was causing auth logout on refresh
+  MealNotifier(this._ref) : super(const MealState(meals: []));
+
+  /// Load today's meals from Supabase
+  /// Only loads once unless force is true
+  Future<void> loadMeals({bool force = false}) async {
+    if (_hasLoaded && !force) {
+      return; // Already loaded
+    }
+
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+
+      // Get current user ID
+      final currentUser = _ref.read(currentUserProvider);
+      if (currentUser == null) {
+        state = const MealState(meals: [], isLoading: false);
+        return;
+      }
+
+      // Fetch meals from Supabase
+      final meals = await _mealService.fetchTodaysMeals(currentUser.id);
+
+      state = state.copyWith(meals: meals, isLoading: false);
+      _hasLoaded = true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
 
   /// Mark a meal as done
-  void markMealDone(String mealId) {
-    final updatedMeals = state.meals.map((meal) {
-      if (meal.id == mealId) {
-        return meal.copyWith(isDone: true);
-      }
-      return meal;
-    }).toList();
+  Future<void> markMealDone(String mealId) async {
+    try {
+      // Optimistically update UI
+      final updatedMeals = state.meals.map((meal) {
+        if (meal.id == mealId) {
+          return meal.copyWith(isDone: true);
+        }
+        return meal;
+      }).toList();
 
-    state = state.copyWith(meals: updatedMeals);
+      state = state.copyWith(meals: updatedMeals);
+
+      // Persist to Supabase
+      await _mealService.markMealDone(mealId, true);
+    } catch (e) {
+      // Revert on error
+      await loadMeals(force: true);
+      rethrow;
+    }
   }
 
   /// Reset all meals to pending
@@ -112,10 +94,11 @@ class MealNotifier extends StateNotifier<MealState> {
   /// Set new meals (for meal generation)
   void setMeals(List<Meal> meals) {
     state = state.copyWith(meals: meals);
+    _hasLoaded = true;
   }
 }
 
 /// Provider for meal state
 final mealProvider = StateNotifierProvider<MealNotifier, MealState>((ref) {
-  return MealNotifier();
+  return MealNotifier(ref);
 });

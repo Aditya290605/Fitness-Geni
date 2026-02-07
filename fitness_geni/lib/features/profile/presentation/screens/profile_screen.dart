@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../providers/profile_provider.dart';
+import '../../../../core/auth/auth_provider.dart';
+import '../../../../core/auth/profile_adapter.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../widgets/bmi_card.dart';
 import '../widgets/daily_needs_card.dart';
 import '../widgets/identity_card.dart';
@@ -12,12 +15,18 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profileState = ref.watch(profileProvider);
-    final profile = profileState.profile;
+    // Use real data from Supabase instead of mock data
+    final supabaseProfile = ref.watch(currentProfileProvider);
 
-    if (profile == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (supabaseProfile == null) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
+
+    // Convert Supabase Profile to UserProfile for display
+    final profile = supabaseProfile.toUserProfile();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -75,7 +84,7 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // Settings
-              _buildSettingsSection(context),
+              _buildSettingsSection(context, ref),
 
               const SizedBox(height: 20),
             ],
@@ -190,7 +199,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSettingsSection(BuildContext context) {
+  Widget _buildSettingsSection(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -248,11 +257,7 @@ class ProfileScreen extends ConsumerWidget {
                 icon: Icons.logout,
                 title: 'Log Out',
                 isDestructive: true,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Log Out - Coming Soon')),
-                  );
-                },
+                onTap: () => _showLogoutDialog(context, ref),
               ),
             ],
           ),
@@ -286,5 +291,74 @@ class ProfileScreen extends ConsumerWidget {
       ),
       onTap: onTap,
     );
+  }
+
+  /// Show logout confirmation dialog
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Log Out'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _performLogout(context, ref);
+            },
+            child: Text('Log Out', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Perform logout operation
+  Future<void> _performLogout(BuildContext context, WidgetRef ref) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) =>
+            const Center(child: CircularProgressIndicator()),
+      );
+
+      // Logout via auth service
+      final authService = ref.read(authServiceProvider);
+      await authService.logout();
+
+      // Dismiss loading indicator
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+
+      // Navigate to login screen
+      if (context.mounted) {
+        context.go(AppConstants.routeLogin);
+      }
+    } catch (e) {
+      // Dismiss loading indicator
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+
+      // Show error message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 }

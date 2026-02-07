@@ -7,12 +7,14 @@ class FitnessGoalScreen extends StatefulWidget {
   final String? initialGoal;
   final Function(String) onGoalSelected;
   final VoidCallback? onBack;
+  final bool isLoading;
 
   const FitnessGoalScreen({
     super.key,
     this.initialGoal,
     required this.onGoalSelected,
     this.onBack,
+    this.isLoading = false,
   });
 
   @override
@@ -38,8 +40,6 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              
-
               // Icon
               Center(
                 child: Container(
@@ -145,7 +145,8 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen> {
                   Expanded(
                     child: CustomButton(
                       text: 'Get Started',
-                      onPressed: _selectedGoal != null
+                      isLoading: widget.isLoading,
+                      onPressed: _selectedGoal != null && !widget.isLoading
                           ? () => widget.onGoalSelected(_selectedGoal!)
                           : null,
                     ),
