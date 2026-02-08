@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/auth/auth_provider.dart';
 import '../providers/meal_provider.dart';
-import '../widgets/daily_progress_bar.dart';
+import '../widgets/nutrition_statistics_card.dart';
 import '../widgets/meal_card.dart';
 import '../widgets/meal_detail_sheet.dart';
 import 'create_meals_screen.dart';
@@ -25,19 +24,27 @@ class HomeScreen extends ConsumerWidget {
     final mealNotifier = ref.read(mealProvider.notifier);
 
     // Lazy load meals when home screen is accessed
-    // This runs after auth is ready, preventing logout bug
     if (!mealState.isLoading &&
         mealState.meals.isEmpty &&
         mealState.error == null) {
       Future.microtask(() => mealNotifier.loadMeals());
     }
 
-    // Get real user name
+    // Get real user name and profile
     final currentProfile = ref.watch(currentProfileProvider);
     final userName = currentProfile?.name ?? 'there';
 
+    // Calculate nutrition targets
+    final caloriesTarget = currentProfile?.dailyCalories ?? 2000;
+    final proteinTarget = (currentProfile?.dailyProtein ?? 150).toDouble();
+    // Rough estimates for carbs and fats based on calorie distribution
+    final carbsTarget = (caloriesTarget * 0.45 / 4)
+        .roundToDouble(); // 45% of calories from carbs
+    final fatTarget = (caloriesTarget * 0.25 / 9)
+        .roundToDouble(); // 25% of calories from fats
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: mealState.meals.isEmpty
             ? _buildEmptyState(context)
@@ -51,80 +58,125 @@ class HomeScreen extends ConsumerWidget {
                     // Header with personalized greeting
                     Text(
                       '${_getGreeting()}, $userName',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
+                    const Text(
                       'Here\'s your plan for today',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Color(0xFF666666)),
                     ),
 
                     const SizedBox(height: 28),
 
-                    // Progress bar
-                    DailyProgressBar(
-                      completed: mealState.completedCount,
-                      total: mealState.totalMeals,
+                    // Statistics card
+                    NutritionStatisticsCard(
+                      caloriesTarget: caloriesTarget,
+                      caloriesConsumed: mealState.consumedCalories,
+                      proteinTarget: proteinTarget,
+                      proteinConsumed: mealState.consumedProtein,
+                      carbsTarget: carbsTarget,
+                      carbsConsumed: mealState.consumedCarbs,
+                      fatTarget: fatTarget,
+                      fatConsumed: mealState.consumedFats,
+                      onTap: () {
+                        // Navigate to statistics screen if available
+                      },
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Create/Change meals button
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CreateMealsScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.auto_awesome),
-                      label: const Text('Create / Change Meals'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 14,
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CreateMealsScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.auto_awesome,
+                          color: Colors.white,
                         ),
-                        side: BorderSide(color: AppColors.primary, width: 1.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        label: const Text(
+                          'Create / Change Meals',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
                     // Section title
-                    Text(
+                    const Text(
                       'Today\'s Meals',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      style: TextStyle(
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    // Meal cards
-                    ...mealState.meals.map(
-                      (meal) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: MealCard(
-                          meal: meal,
-                          onTap: () {
-                            MealDetailSheet.show(
-                              context,
-                              meal: meal,
-                              onMarkDone: () {
-                                mealNotifier.markMealDone(meal.id);
-                              },
-                            );
-                          },
+                    // Meal cards - sorted by time order
+                    ...(() {
+                      final sortedMeals = mealState.meals.toList()
+                        ..sort((a, b) {
+                          int getOrder(String time) {
+                            final t = time.toLowerCase();
+                            if (t.contains('breakfast') ||
+                                t.contains('morning')) {
+                              return 1;
+                            }
+                            if (t.contains('lunch') ||
+                                t.contains('afternoon')) {
+                              return 2;
+                            }
+                            if (t.contains('dinner') || t.contains('night')) {
+                              return 3;
+                            }
+                            return 4; // snacks
+                          }
+
+                          return getOrder(a.time).compareTo(getOrder(b.time));
+                        });
+                      return sortedMeals.map(
+                        (meal) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: MealCard(
+                            meal: meal,
+                            onTap: () {
+                              MealDetailSheet.show(
+                                context,
+                                meal: meal,
+                                onMarkDone: () {
+                                  mealNotifier.markMealDone(meal.id);
+                                },
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    })(),
                   ],
                 ),
               ),
@@ -142,44 +194,52 @@ class HomeScreen extends ConsumerWidget {
             Icon(
               Icons.restaurant_menu_outlined,
               size: 80,
-              color: AppColors.textSecondary.withValues(alpha: 0.5),
+              color: const Color(0xFFCCCCCC),
             ),
             const SizedBox(height: 20),
-            Text(
+            const Text(
               'No meals planned yet',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               'Generate your personalized meal plan to get started',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 16, color: Color(0xFF666666)),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CreateMealsScreen(),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CreateMealsScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.auto_awesome, color: Colors.white),
+                label: const Text(
+                  'Generate Today\'s Plan',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
-                );
-              },
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text('Generate Today\'s Plan'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
                 ),
-                side: BorderSide(color: AppColors.primary, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
                 ),
               ),
             ),

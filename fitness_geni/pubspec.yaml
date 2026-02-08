@@ -69,6 +69,9 @@ dependencies:
   
   # Animations
   lottie: ^3.1.0
+  
+  # Progress indicators
+  percent_indicator: ^4.2.1
 
 dev_dependencies:
   flutter_test:

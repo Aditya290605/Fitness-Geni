@@ -15,6 +15,31 @@ class MealState {
   int get totalMeals => meals.length;
   double get progress => totalMeals > 0 ? completedCount / totalMeals : 0.0;
 
+  // Calculate consumed nutrition from completed meals
+  int get consumedCalories {
+    return meals
+        .where((m) => m.isDone)
+        .fold(0, (sum, meal) => sum + (meal.calories ?? 0));
+  }
+
+  double get consumedProtein {
+    return meals
+        .where((m) => m.isDone)
+        .fold(0.0, (sum, meal) => sum + (meal.protein ?? 0.0));
+  }
+
+  double get consumedCarbs {
+    return meals
+        .where((m) => m.isDone)
+        .fold(0.0, (sum, meal) => sum + (meal.carbs ?? 0.0));
+  }
+
+  double get consumedFats {
+    return meals
+        .where((m) => m.isDone)
+        .fold(0.0, (sum, meal) => sum + (meal.fats ?? 0.0));
+  }
+
   MealState copyWith({List<Meal>? meals, bool? isLoading, String? error}) {
     return MealState(
       meals: meals ?? this.meals,
