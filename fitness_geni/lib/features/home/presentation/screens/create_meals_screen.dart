@@ -5,6 +5,7 @@ import '../../../../core/widgets/custom_button.dart';
 import '../providers/meal_creation_provider.dart';
 import '../widgets/ingredient_chip.dart';
 import '../widgets/mode_selection_card.dart';
+import 'meal_loading_screen.dart';
 import 'meals_preview_screen.dart';
 
 /// Create meals screen - Mode selection and input
@@ -42,17 +43,29 @@ class _CreateMealsScreenState extends ConsumerState<CreateMealsScreen> {
       return;
     }
 
+    // Navigate to loading screen immediately
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const MealLoadingScreen()),
+      );
+    }
+
     try {
+      // Generate meals with AI
       await ref.read(mealCreationProvider.notifier).generateMeals();
 
       if (mounted) {
-        Navigator.push(
+        // Replace loading screen with preview screen
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MealsPreviewScreen()),
         );
       }
     } catch (e) {
       if (mounted) {
+        // Pop loading screen and show error
+        Navigator.pop(context);
         _showError('Failed to generate meals. Please try again.');
       }
     }

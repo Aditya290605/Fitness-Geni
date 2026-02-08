@@ -6,36 +6,67 @@ import '../providers/meal_creation_provider.dart';
 import '../providers/meal_provider.dart';
 
 /// Preview screen showing generated meals
-class MealsPreviewScreen extends ConsumerWidget {
+class MealsPreviewScreen extends ConsumerStatefulWidget {
   const MealsPreviewScreen({super.key});
 
-  void _useMeals(BuildContext context, WidgetRef ref) {
+  @override
+  ConsumerState<MealsPreviewScreen> createState() => _MealsPreviewScreenState();
+}
+
+class _MealsPreviewScreenState extends ConsumerState<MealsPreviewScreen> {
+  bool _isSaving = false;
+
+  Future<void> _useMeals() async {
     final generatedMeals = ref.read(mealCreationProvider).generatedMeals;
 
-    if (generatedMeals != null && generatedMeals.isNotEmpty) {
-      // Update the meal provider with generated meals
-      ref.read(mealProvider.notifier).setMeals(generatedMeals);
+    if (generatedMeals == null || generatedMeals.isEmpty) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      // Save meals to Supabase and reload with proper IDs
+      final success = await ref
+          .read(mealProvider.notifier)
+          .saveMealsAndReload(generatedMeals);
+
+      if (!success) {
+        throw Exception('Failed to save meals');
+      }
 
       // Reset creation state
       ref.read(mealCreationProvider.notifier).reset();
 
-      // Navigate back to home (pop twice - preview and create screens)
-      Navigator.pop(context);
-      Navigator.pop(context);
+      if (mounted) {
+        // Navigate back to home (pop twice - preview and create screens)
+        Navigator.pop(context);
+        Navigator.pop(context);
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Meals updated successfully!'),
-          backgroundColor: AppColors.primary,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Meals saved successfully!'),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isSaving = false);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving meals: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final state = ref.watch(mealCreationProvider);
     final meals = state.generatedMeals ?? [];
 
@@ -92,9 +123,11 @@ class MealsPreviewScreen extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
+                      onPressed: _isSaving
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                            },
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: BorderSide(color: AppColors.border, width: 1.5),
@@ -105,7 +138,9 @@ class MealsPreviewScreen extends ConsumerWidget {
                       child: Text(
                         'Cancel',
                         style: TextStyle(
-                          color: AppColors.textPrimary,
+                          color: _isSaving
+                              ? AppColors.textSecondary
+                              : AppColors.textPrimary,
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
                         ),
@@ -116,8 +151,9 @@ class MealsPreviewScreen extends ConsumerWidget {
                   Expanded(
                     flex: 2,
                     child: CustomButton(
-                      text: 'Use These Meals',
-                      onPressed: () => _useMeals(context, ref),
+                      text: _isSaving ? 'Saving...' : 'Use These Meals',
+                      onPressed: _isSaving ? null : _useMeals,
+                      isLoading: _isSaving,
                     ),
                   ),
                 ],
