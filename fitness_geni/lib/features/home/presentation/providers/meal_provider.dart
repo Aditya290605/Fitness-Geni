@@ -96,6 +96,31 @@ class MealNotifier extends StateNotifier<MealState> {
     state = state.copyWith(meals: meals);
     _hasLoaded = true;
   }
+
+  /// Save generated meals to Supabase and reload with proper IDs
+  /// Returns true if successful, false otherwise
+  Future<bool> saveMealsAndReload(List<Meal> generatedMeals) async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+
+      // Get current user ID
+      final currentUser = _ref.read(currentUserProvider);
+      if (currentUser == null) {
+        throw Exception('User not found');
+      }
+
+      // Save meals to Supabase
+      await _mealService.saveMeals(currentUser.id, generatedMeals);
+
+      // Reload meals from Supabase to get proper daily_plan_meal IDs
+      await loadMeals(force: true);
+
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
 }
 
 /// Provider for meal state

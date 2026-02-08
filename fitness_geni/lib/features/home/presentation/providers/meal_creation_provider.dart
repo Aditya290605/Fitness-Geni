@@ -1,9 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_provider.dart';
-import '../../../../core/services/meal_service.dart';
 import '../../../../core/services/gemini_service.dart';
 import '../../domain/models/meal.dart';
-import 'meal_provider.dart';
 
 /// Mode for meal generation
 enum MealGenerationMode { ingredients, surprise }
@@ -65,7 +63,6 @@ class MealCreationState {
 /// Notifier for meal creation
 class MealCreationNotifier extends StateNotifier<MealCreationState> {
   final Ref _ref;
-  final MealService _mealService = MealService();
   final GeminiService _geminiService = GeminiService();
 
   MealCreationNotifier(this._ref) : super(const MealCreationState());
@@ -110,16 +107,8 @@ class MealCreationNotifier extends StateNotifier<MealCreationState> {
             : null,
       );
 
+      // Store generated meals in state (not saved to Supabase yet)
       state = state.copyWith(generatedMeals: meals, isGenerating: false);
-
-      // Save to Supabase
-      final currentUser = _ref.read(currentUserProvider);
-      if (currentUser != null) {
-        await _mealService.saveMeals(currentUser.id, meals);
-
-        // Refresh meal provider to show new meals
-        _ref.read(mealProvider.notifier).loadMeals(force: true);
-      }
     } catch (e) {
       state = state.copyWith(
         isGenerating: false,
