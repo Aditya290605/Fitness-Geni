@@ -161,7 +161,7 @@ class HomeScreen extends ConsumerWidget {
                         });
                       return sortedMeals.map(
                         (meal) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.only(bottom: 16),
                           child: MealCard(
                             meal: meal,
                             onTap: () {

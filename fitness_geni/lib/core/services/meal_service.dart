@@ -116,14 +116,46 @@ class MealService extends SupabaseService {
 
       // Get or create today's daily plan
       final dailyPlan = await _getOrCreateDailyPlan(userId, today);
+      final dailyPlanId = dailyPlan['id'];
+
+      debugPrint('📋 Using daily_plan_id: $dailyPlanId for today: $today');
+
+      // First, check how many meals exist for this plan
+      final existingMeals = await supabase
+          .from('daily_plan_meals')
+          .select('id')
+          .eq('daily_plan_id', dailyPlanId);
+
+      debugPrint('📊 Found ${existingMeals.length} existing meals to delete');
 
       // Delete existing daily_plan_meals for today
-      await supabase
+      final deleteResponse = await supabase
           .from('daily_plan_meals')
           .delete()
-          .eq('daily_plan_id', dailyPlan['id']);
+          .eq('daily_plan_id', dailyPlanId)
+          .select();
 
-      debugPrint('🗑️ Deleted old daily_plan_meals');
+      final deletedCount = deleteResponse.length;
+      debugPrint('🗑️ Deleted $deletedCount old daily_plan_meals');
+
+      if (deletedCount != existingMeals.length) {
+        debugPrint(
+          '⚠️ WARNING: Expected to delete ${existingMeals.length} but deleted $deletedCount',
+        );
+      }
+
+      // Reset daily plan nutrition tracking to zero
+      await supabase
+          .from('daily_plans')
+          .update({
+            'consumed_calories': 0,
+            'consumed_protein': 0.0,
+            'consumed_carbs': 0.0,
+            'consumed_fats': 0.0,
+          })
+          .eq('id', dailyPlanId);
+
+      debugPrint('🔄 Reset daily plan nutrition tracking');
 
       // Insert meals into meals catalog (or get existing)
       for (final meal in meals) {
@@ -169,7 +201,7 @@ class MealService extends SupabaseService {
         await supabase
             .from('daily_plan_meals')
             .insert({
-              'daily_plan_id': dailyPlan['id'],
+              'daily_plan_id': dailyPlanId,
               'meal_id': mealId,
               'meal_time': _mapMealTimeToDb(meal.time),
               'is_completed': false,
