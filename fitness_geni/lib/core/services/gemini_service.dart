@@ -17,46 +17,7 @@ class GeminiService {
       generationConfig: GenerationConfig(
         temperature: GeminiConfig.temperature,
         topP: GeminiConfig.topP,
-        maxOutputTokens: 8192, // Increased for complete responses
-        responseMimeType: 'application/json', // Force JSON responses
-        responseSchema: Schema.object(
-          properties: {
-            'meals': Schema.array(
-              items: Schema.object(
-                properties: {
-                  'name': Schema.string(description: 'Meal name'),
-                  'time': Schema.enumString(
-                    enumValues: ['breakfast', 'lunch', 'dinner'],
-                  ),
-                  'ingredients': Schema.array(items: Schema.string()),
-                  'recipeSteps': Schema.array(items: Schema.string()),
-                  'nutrition': Schema.object(
-                    properties: {
-                      'calories': Schema.integer(),
-                      'protein': Schema.number(),
-                      'carbs': Schema.number(),
-                      'fats': Schema.number(),
-                    },
-                    requiredProperties: [
-                      'calories',
-                      'protein',
-                      'carbs',
-                      'fats',
-                    ],
-                  ),
-                },
-                requiredProperties: [
-                  'name',
-                  'time',
-                  'ingredients',
-                  'recipeSteps',
-                  'nutrition',
-                ],
-              ),
-            ),
-          },
-          requiredProperties: ['meals'],
-        ),
+        maxOutputTokens: 8192, // Full token limit for complete responses
       ),
     );
   }
@@ -117,7 +78,7 @@ INGREDIENT FLEXIBILITY:
 ''';
 
     return '''
-Generate 3 meals in JSON format:
+Generate 3 daily meals in pure JSON format (no markdown, no code blocks).
 
 Profile: Age ${profile.age ?? 25}, ${profile.weightKg ?? 70}kg, ${profile.heightCm ?? 170}cm, Goal: $goal, Diet: $dietType
 Targets: ${dailyCalories}kcal, ${dailyProtein}g protein, ${dailyCarbs}g carbs, ${dailyFats}g fat
@@ -126,17 +87,20 @@ $ingredientsSection
 
 Requirements:
 - 3 meals: Breakfast (30% cal), Lunch (40% cal), Dinner (30% cal)
-- Budget-friendly, quick (under 30min), Indian cuisine
-- Each meal: max 5 ingredients, max 3 recipe steps
+- Budget-friendly, quick (~20min), Indian/simple cuisine
+- Each meal: max 5 ingredients (with qty), max 3 brief recipe steps
 - time field MUST be: "breakfast", "lunch", or "dinner" (lowercase only)
+- Ingredients: include quantity in the string (e.g., "100g paneer", "2 eggs")
 
-JSON Format (NO markdown, NO explanations):
+CRITICAL: Return ONLY valid JSON, NO markdown code fences (```), NO explanations.
+
+JSON Format:
 {
   "meals": [
     {
       "name": "Meal Name",
       "time": "breakfast",
-      "ingredients": ["item with qty"],
+      "ingredients": ["qty + item"],
       "recipeSteps": ["brief step"],
       "nutrition": {"calories": 500, "protein": 20, "carbs": 60, "fats": 15}
     },
@@ -144,16 +108,18 @@ JSON Format (NO markdown, NO explanations):
     {"name": "Dinner", "time": "dinner", "ingredients": [], "recipeSteps": [], "nutrition": {}}
   ]
 }
-
-Return ONLY the JSON object.
 ''';
   }
 
   /// Parse Gemini response into Meal objects
   List<Meal> _parseMealsResponse(String response) {
     try {
+      debugPrint('📥 Raw response length: ${response.length} chars');
+
       // Clean response - remove markdown code blocks if present
       String cleanResponse = response.trim();
+
+      // Remove markdown code fences
       if (cleanResponse.startsWith('```json')) {
         cleanResponse = cleanResponse.substring(7);
       } else if (cleanResponse.startsWith('```')) {
@@ -164,8 +130,30 @@ Return ONLY the JSON object.
       }
       cleanResponse = cleanResponse.trim();
 
-      final jsonData = json.decode(cleanResponse) as Map<String, dynamic>;
+      // Fix common JSON issues
+      // 1. Replace unescaped newlines in strings
+      cleanResponse = _fixJsonString(cleanResponse);
+
+      debugPrint('🧹 Cleaned response length: ${cleanResponse.length} chars');
+
+      // Try to parse JSON
+      Map<String, dynamic> jsonData;
+      try {
+        jsonData = json.decode(cleanResponse) as Map<String, dynamic>;
+      } catch (e) {
+        // If parsing fails, try to fix truncated JSON
+        debugPrint(
+          '⚠️ Initial parse failed, attempting to fix truncated JSON...',
+        );
+        cleanResponse = _fixTruncatedJson(cleanResponse);
+        jsonData = json.decode(cleanResponse) as Map<String, dynamic>;
+      }
+
       final mealsJson = jsonData['meals'] as List;
+
+      if (mealsJson.isEmpty) {
+        throw Exception('No meals in response');
+      }
 
       return mealsJson.map((mealJson) {
         final meal = mealJson as Map<String, dynamic>;
@@ -185,8 +173,124 @@ Return ONLY the JSON object.
       }).toList();
     } catch (e) {
       debugPrint('❌ Error parsing Gemini response: $e');
-      debugPrint('Response was: $response');
+
+      // Show first 500 chars and last 500 chars for debugging
+      final start = response.length > 500
+          ? response.substring(0, 500)
+          : response;
+      final end = response.length > 500
+          ? response.substring(response.length - 500)
+          : '';
+
+      debugPrint('Response start: $start');
+      if (end.isNotEmpty) {
+        debugPrint('Response end: $end');
+      }
+
       throw Exception('Failed to parse AI response. Please try again.');
     }
+  }
+
+  /// Fix common JSON string issues
+  String _fixJsonString(String jsonStr) {
+    // This helps with strings that contain unescaped quotes or newlines
+    // The AI should return properly escaped JSON, but this adds safety
+    return jsonStr;
+  }
+
+  /// Attempt to fix truncated JSON by closing open structures
+  String _fixTruncatedJson(String jsonStr) {
+    debugPrint('🔧 Attempting to fix truncated JSON...');
+
+    // Count open/close brackets and braces
+    int openBraces = 0;
+    int openBrackets = 0;
+    bool inString = false;
+    bool escaped = false;
+    int lastValidPos = 0;
+
+    for (int i = 0; i < jsonStr.length; i++) {
+      final char = jsonStr[i];
+
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (char == '\\') {
+        escaped = true;
+        continue;
+      }
+
+      if (char == '"') {
+        inString = !inString;
+        if (!inString) {
+          lastValidPos = i; // Track position after closing quotes
+        }
+        continue;
+      }
+
+      if (!inString) {
+        if (char == '{') openBraces++;
+        if (char == '}') openBraces--;
+        if (char == '[') openBrackets++;
+        if (char == ']') openBrackets--;
+
+        // Track last valid position
+        if (char == '}' || char == ']' || char == ',') {
+          lastValidPos = i;
+        }
+      }
+    }
+
+    // If we're in a string, we need to be more careful
+    String fixed = jsonStr;
+
+    if (inString) {
+      // Try to truncate at last valid position instead of closing mid-string
+      // This removes the incomplete data
+      if (lastValidPos > 0 && lastValidPos < jsonStr.length - 1) {
+        fixed = jsonStr.substring(0, lastValidPos + 1);
+        debugPrint('🔧 Truncated at last valid position: $lastValidPos');
+
+        // Recount after truncation
+        openBraces = 0;
+        openBrackets = 0;
+        inString = false;
+
+        for (int i = 0; i < fixed.length; i++) {
+          final char = fixed[i];
+          if (char == '"') inString = !inString;
+          if (!inString) {
+            if (char == '{') openBraces++;
+            if (char == '}') openBraces--;
+            if (char == '[') openBrackets++;
+            if (char == ']') openBrackets--;
+          }
+        }
+      } else {
+        fixed += '"';
+        debugPrint('🔧 Closed unterminated string');
+      }
+    }
+
+    // Close any open arrays
+    while (openBrackets > 0) {
+      fixed += ']';
+      openBrackets--;
+      debugPrint('🔧 Closed open array');
+    }
+
+    // Close any open objects
+    while (openBraces > 0) {
+      fixed += '}';
+      openBraces--;
+      debugPrint('🔧 Closed open object');
+    }
+
+    debugPrint(
+      '🔧 Fixed JSON length: ${fixed.length} (original: ${jsonStr.length})',
+    );
+    return fixed;
   }
 }

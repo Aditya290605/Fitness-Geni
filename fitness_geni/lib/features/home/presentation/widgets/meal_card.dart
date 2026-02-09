@@ -1,229 +1,190 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/meal.dart';
 
-/// Premium horizontal meal card with app-themed colored background
+/// Clean, premium meal card with white background and left-aligned image
 class MealCard extends StatelessWidget {
   final Meal meal;
   final VoidCallback onTap;
 
   const MealCard({super.key, required this.meal, required this.onTap});
 
-  // Get meal-specific color based on time/type - matching app theme
-  Color _getMealColor() {
+  // Get meal-specific image based on time/type
+  String _getMealImage() {
     final time = meal.time.toLowerCase();
     if (time.contains('breakfast') || time.contains('morning')) {
-      return const Color(0xFFF3E5F5); // Light purple for morning
+      return 'assets/images/breakfast.png';
     } else if (time.contains('lunch') || time.contains('afternoon')) {
-      return const Color(0xFFE8EAF6); // Indigo tint for afternoon
+      return 'assets/images/lunch.png';
     } else if (time.contains('dinner') || time.contains('night')) {
-      return const Color(0xFFEDE7F6); // Deep purple tint for night
+      return 'assets/images/dinner.png';
     } else {
-      return const Color(0xFFF3E5F5); // Default light purple for snacks
-    }
-  }
-
-  Color _getAccentColor() {
-    final time = meal.time.toLowerCase();
-    if (time.contains('breakfast') || time.contains('morning')) {
-      return const Color(0xFF9C27B0); // Purple
-    } else if (time.contains('lunch') || time.contains('afternoon')) {
-      return const Color(0xFF5C6BC0); // Indigo
-    } else if (time.contains('dinner') || time.contains('night')) {
-      return const Color(0xFF673AB7); // Deep Purple
-    } else {
-      return const Color(0xFFAB47BC); // Light purple
+      return 'assets/images/breakfast.png'; // Default
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final mealColor = _getMealColor();
-    final accentColor = _getAccentColor();
-
-    return GestureDetector(
-      onTap: onTap,
+    return Opacity(
+      opacity: meal.isDone ? 0.5 : 1.0,
       child: Container(
-        height: 140,
         decoration: BoxDecoration(
-          color: mealColor,
-          borderRadius: BorderRadius.circular(20),
+          color: meal.isDone ? Colors.grey.shade100 : Colors.white,
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 15,
+              color: Colors.black.withOpacity(meal.isDone ? 0.02 : 0.06),
+              blurRadius: 16,
               offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(meal.isDone ? 0.01 : 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Stack(
-          children: [
-            // Decorative circles in background
-            Positioned(
-              right: -30,
-              top: -30,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.4),
-                ),
-              ),
-            ),
-            Positioned(
-              right: 70,
-              bottom: -20,
-              child: Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.3),
-                ),
-              ),
-            ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(18),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Left side - Meal Image with checkmark overlay when done
+                    Stack(
+                      children: [
+                        Opacity(
+                          opacity: 0.95,
+                          child: Container(
+                          
+                            height: 100,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: ColorFiltered(
+                                colorFilter: meal.isDone
+                                    ? ColorFilter.mode(
+                                        Colors.grey.withOpacity(0.5),
+                                        BlendMode.saturation,
+                                      )
+                                    : const ColorFilter.mode(
+                                        Colors.transparent,
+                                        BlendMode.multiply,
+                                      ),
+                                child: Image.asset(
+                                  _getMealImage(),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Checkmark overlay when done
+                        if (meal.isDone)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.check_circle,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
 
-            // Main content
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  // Left side - Meal info
+                    const SizedBox(width: 14),
+
+                  // Right side - Meal details
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         // Meal name
                         Text(
                           meal.name,
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 17,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                            decoration: meal.isDone
-                                ? TextDecoration.lineThrough
-                                : null,
-                            decorationColor: Colors.black54,
-                            decorationThickness: 2,
-                            height: 1.2,
+                            color: meal.isDone
+                                ? Colors.grey.shade600
+                                : Colors.black87,
+                            height: 1.3,
                           ),
-                          maxLines: 2,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
 
-                        // Time badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: accentColor,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            meal.time,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        // Nutrition info - labeled
+                        // Nutrition values - side by side
                         Row(
                           children: [
-                            _buildNutritionLabel(
-                              'Cal',
+                            _buildNutritionItem(
                               '${meal.calories ?? 0}',
-                              accentColor,
+                              'Calories',
                             ),
-                            const SizedBox(width: 12),
-                            _buildNutritionLabel(
-                              'Protein',
+                            const SizedBox(width: 16),
+                            _buildNutritionItem(
                               '${meal.protein?.toStringAsFixed(0) ?? 0}g',
-                              accentColor,
+                              'Protein',
                             ),
-                            const SizedBox(width: 12),
-                            _buildNutritionLabel(
-                              'Carbs',
+                            const SizedBox(width: 16),
+                            _buildNutritionItem(
                               '${meal.carbs?.toStringAsFixed(0) ?? 0}g',
-                              accentColor,
+                              'Carbs',
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
 
-                  const SizedBox(width: 12),
+                        const SizedBox(height: 12),
 
-                  // Right side - Visual element with nutrition highlight
-                  Container(
-                    width: 95,
-                    height: 95,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          accentColor.withValues(alpha: 0.9),
-                          accentColor,
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: accentColor.withValues(alpha: 0.3),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Main calorie display
-                        Text(
-                          '${meal.calories ?? 0}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Text(
-                          'kcal',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        // Status indicator
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: meal.isDone
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            meal.isDone ? 'Done' : 'Pending',
-                            style: TextStyle(
-                              color: meal.isDone ? accentColor : Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
+                        // View Meal Details button
+                        SizedBox(
+                          height: 32,
+                          child: ElevatedButton(
+                            onPressed: onTap,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: meal.isDone
+                                  ? Colors.grey.shade400
+                                  : Colors.black,
+                              foregroundColor: meal.isDone
+                                  ? Colors.grey.shade600
+                                  : Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              meal.isDone ? 'Completed' : 'View Meal Details',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.2,
+                              ),
                             ),
                           ),
                         ),
@@ -233,33 +194,35 @@ class MealCard extends StatelessWidget {
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
-    );
+    ));
   }
 
-  Widget _buildNutritionLabel(String label, String value, Color color) {
+  Widget _buildNutritionItem(String value, String label) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          label,
+          value,
           style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: color.withValues(alpha: 0.8),
-            height: 1.1,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: meal.isDone ? Colors.grey.shade500 : Colors.black87,
+            height: 1.2,
           ),
         ),
-        const SizedBox(height: 1),
+        const SizedBox(height: 2),
         Text(
-          value,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: meal.isDone
+                ? Colors.grey.shade400
+                : Colors.black.withOpacity(0.5),
             height: 1.1,
           ),
         ),
