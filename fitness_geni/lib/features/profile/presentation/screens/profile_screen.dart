@@ -1,92 +1,83 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/auth/auth_provider.dart';
 import '../../../../core/auth/profile_adapter.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../widgets/bmi_card.dart';
-import '../widgets/daily_needs_card.dart';
-import '../widgets/identity_card.dart';
 
-/// Profile screen - Redesigned with prominent metrics
+/// Premium Profile Screen - Clean, calm, minimal design
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
+  // Design System Colors
+  static const Color primaryGreen = Color(0xFF3D6B4A);
+  static const Color lightGreen = Color(0xFF5A8A6A);
+  static const Color accentOrange = Color(0xFFF5A623);
+  static const Color background = Color(0xFFFAFAFA);
+  static const Color cardBg = Colors.white;
+  static const Color textPrimary = Color(0xFF1F2937);
+  static const Color textSecondary = Color(0xFF6B7280);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Use real data from Supabase instead of mock data
     final supabaseProfile = ref.watch(currentProfileProvider);
 
     if (supabaseProfile == null) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: background,
+        body: const Center(
+          child: CircularProgressIndicator(color: primaryGreen),
+        ),
       );
     }
 
-    // Convert Supabase Profile to UserProfile for display
     final profile = supabaseProfile.toUserProfile();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 8),
-
               // Header
-              Text(
+              const Text(
                 'Profile',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                style: TextStyle(
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
+                  color: textPrimary,
+                  letterSpacing: -0.5,
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              // Identity Card - Compact
-              IdentityCard(profile: profile),
+              // User Info Card
+              _buildUserCard(context, profile),
+
+              const SizedBox(height: 20),
+
+              // BMI Section
+              _buildBmiCard(profile),
+
+              const SizedBox(height: 20),
+
+              // Daily Nutrition Targets
+              _buildNutritionSection(profile),
+
+              const SizedBox(height: 20),
+
+              // Goal Card
+              _buildGoalCard(profile),
 
               const SizedBox(height: 24),
 
-              // HERO: BMI Card - Large and prominent
-              BmiCard(profile: profile),
-
-              const SizedBox(height: 20),
-
-              // Section Header
-              Text(
-                'Daily Needs',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-
-              const SizedBox(height: 12),
-
-              // HERO: Daily Needs - Side by side cards
-              DailyNeedsCard(profile: profile),
-
-              const SizedBox(height: 20),
-
-              // Goal Card - Compact
-              _buildGoalCard(context, profile),
-
-              const SizedBox(height: 20),
-
-              // Explanation
-              _buildExplanationCard(context, profile),
-
-              const SizedBox(height: 24),
-
-              // Settings
+              // Settings Section
               _buildSettingsSection(context, ref),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -94,63 +85,70 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildGoalCard(BuildContext context, profile) {
-    IconData getGoalIcon() {
-      switch (profile.fitnessGoal) {
-        case 'Weight Loss':
-          return Icons.trending_down;
-        case 'Weight Gain':
-          return Icons.trending_up;
-        case 'Maintain':
-          return Icons.trending_flat;
-        default:
-          return Icons.flag_outlined;
-      }
-    }
-
+  Widget _buildUserCard(BuildContext context, dynamic profile) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withValues(alpha: 0.1),
-            AppColors.accent.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: cardBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
+          // Avatar
           Container(
-            padding: const EdgeInsets.all(14),
+            width: 70,
+            height: 70,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(
+                colors: [primaryGreen, lightGreen],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
             ),
-            child: Icon(getGoalIcon(), color: AppColors.primary, size: 32),
+            child: Center(
+              child: Text(
+                profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'U',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
           ),
+
           const SizedBox(width: 16),
+
+          // User Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Your Goal',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
+                  profile.name,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  profile.fitnessGoal,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildInfoPill('${profile.age} yrs'),
+                    const SizedBox(width: 8),
+                    _buildInfoPill('${profile.heightCm.round()} cm'),
+                    const SizedBox(width: 8),
+                    _buildInfoPill('${profile.weightKg.round()} kg'),
+                  ],
                 ),
               ],
             ),
@@ -160,35 +158,334 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildExplanationCard(BuildContext context, profile) {
+  Widget _buildInfoPill(String text) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: primaryGreen.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: primaryGreen,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBmiCard(dynamic profile) {
+    Color bmiColor;
+    switch (profile.bmiCategory) {
+      case 'Underweight':
+        bmiColor = const Color(0xFF3B82F6);
+        break;
+      case 'Normal':
+        bmiColor = primaryGreen;
+        break;
+      case 'Overweight':
+        bmiColor = accentOrange;
+        break;
+      case 'Obese':
+        bmiColor = const Color(0xFFEF4444);
+        break;
+      default:
+        bmiColor = textSecondary;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Label
+          Text(
+            'BMI',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: textSecondary,
+              letterSpacing: 1,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Large BMI Value
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                profile.bmi.toStringAsFixed(1),
+                style: TextStyle(
+                  fontSize: 56,
+                  fontWeight: FontWeight.w900,
+                  color: bmiColor,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'kg/m²',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: bmiColor.withOpacity(0.6),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Category Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: bmiColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              profile.bmiCategory,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: bmiColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNutritionSection(dynamic profile) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Daily Targets',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: textPrimary,
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Nutrition Grid
+        Row(
+          children: [
+            Expanded(
+              child: _buildNutritionTile(
+                'Calories',
+                profile.dailyCalories.toString(),
+                'kcal',
+                const Color(0xFFEF4444),
+                Icons.local_fire_department_rounded,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildNutritionTile(
+                'Protein',
+                profile.dailyProteinG.round().toString(),
+                'g',
+                primaryGreen,
+                Icons.fitness_center_rounded,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        Row(
+          children: [
+            Expanded(
+              child: _buildNutritionTile(
+                'Carbs',
+                '${(profile.dailyCalories * 0.5 / 4).round()}',
+                'g',
+                accentOrange,
+                Icons.grain_rounded,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildNutritionTile(
+                'Fats',
+                '${(profile.dailyCalories * 0.25 / 9).round()}',
+                'g',
+                const Color(0xFF8B5CF6),
+                Icons.water_drop_rounded,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNutritionTile(
+    String label,
+    String value,
+    String unit,
+    Color color,
+    IconData icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.lightbulb_outline, color: AppColors.accent, size: 24),
+          // Icon
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+
           const SizedBox(width: 12),
+
+          // Value
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'What This Means',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: textSecondary,
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 2),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      unit,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: color.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGoalCard(dynamic profile) {
+    IconData goalIcon;
+    switch (profile.fitnessGoal) {
+      case 'Weight Loss':
+        goalIcon = Icons.trending_down_rounded;
+        break;
+      case 'Weight Gain':
+        goalIcon = Icons.trending_up_rounded;
+        break;
+      case 'Maintain':
+        goalIcon = Icons.trending_flat_rounded;
+        break;
+      default:
+        goalIcon = Icons.flag_rounded;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [primaryGreen, lightGreen],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: primaryGreen.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(goalIcon, color: Colors.white, size: 28),
+          ),
+
+          const SizedBox(width: 16),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  profile.goalExplanation,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                    height: 1.5,
+                  'Your Goal',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withOpacity(0.8),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  profile.fitnessGoal,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
               ],
@@ -203,61 +500,48 @@ class ProfileScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Settings',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: textPrimary,
+          ),
         ),
 
         const SizedBox(height: 12),
 
         Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: cardBg,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             children: [
+              _buildSettingsTile(Icons.edit_outlined, 'Edit Profile', () {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Coming Soon')));
+              }),
+              _buildDivider(),
+              _buildSettingsTile(Icons.flag_outlined, 'Change Goal', () {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Coming Soon')));
+              }),
+              _buildDivider(),
               _buildSettingsTile(
-                context,
-                icon: Icons.edit_outlined,
-                title: 'Edit Profile',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Edit Profile - Coming Soon')),
-                  );
-                },
-              ),
-              Divider(
-                height: 1,
-                color: AppColors.border,
-                indent: 16,
-                endIndent: 16,
-              ),
-              _buildSettingsTile(
-                context,
-                icon: Icons.flag_outlined,
-                title: 'Change Goal',
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Change Goal - Coming Soon')),
-                  );
-                },
-              ),
-              Divider(
-                height: 1,
-                color: AppColors.border,
-                indent: 16,
-                endIndent: 16,
-              ),
-              _buildSettingsTile(
-                context,
-                icon: Icons.logout,
-                title: 'Log Out',
+                Icons.logout_rounded,
+                'Log Out',
+                () => _showLogoutDialog(context, ref),
                 isDestructive: true,
-                onTap: () => _showLogoutDialog(context, ref),
               ),
             ],
           ),
@@ -267,95 +551,102 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildSettingsTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
+    IconData icon,
+    String title,
+    VoidCallback onTap, {
     bool isDestructive = false,
   }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isDestructive ? AppColors.error : AppColors.primary,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isDestructive ? AppColors.error : AppColors.textPrimary,
-          fontWeight: FontWeight.w500,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isDestructive ? const Color(0xFFEF4444) : primaryGreen,
+              size: 22,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: isDestructive ? const Color(0xFFEF4444) : textPrimary,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: textSecondary.withOpacity(0.4),
+              size: 22,
+            ),
+          ],
         ),
       ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: AppColors.textSecondary.withValues(alpha: 0.5),
-      ),
-      onTap: onTap,
     );
   }
 
-  /// Show logout confirmation dialog
+  Widget _buildDivider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Divider(height: 1, color: Colors.grey.withOpacity(0.15)),
+    );
+  }
+
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Log Out'),
         content: const Text('Are you sure you want to log out?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
+            child: Text('Cancel', style: TextStyle(color: textSecondary)),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
               await _performLogout(context, ref);
             },
-            child: Text('Log Out', style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Log Out',
+              style: TextStyle(color: Color(0xFFEF4444)),
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// Perform logout operation
   Future<void> _performLogout(BuildContext context, WidgetRef ref) async {
     try {
-      // Show loading indicator
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (dialogContext) =>
-            const Center(child: CircularProgressIndicator()),
+        builder: (_) =>
+            const Center(child: CircularProgressIndicator(color: primaryGreen)),
       );
 
-      // Logout via auth service
       final authService = ref.read(authServiceProvider);
       await authService.logout();
 
-      // Dismiss loading indicator
       if (context.mounted) {
         Navigator.pop(context);
-      }
-
-      // Navigate to login screen
-      if (context.mounted) {
         context.go(AppConstants.routeLogin);
       }
     } catch (e) {
-      // Dismiss loading indicator
       if (context.mounted) {
         Navigator.pop(context);
-      }
-
-      // Show error message
-      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Logout failed: ${e.toString()}'),
-            backgroundColor: AppColors.error,
+            content: Text('Logout failed: $e'),
+            backgroundColor: const Color(0xFFEF4444),
           ),
         );
       }
