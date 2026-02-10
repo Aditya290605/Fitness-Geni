@@ -9,15 +9,27 @@ class HealthFitnessService implements FitnessService {
   final Health _health = Health();
   bool _isInitialized = false;
 
-  /// Data types we want to read from health platform
-  static const List<HealthDataType> _dataTypes = [
-    HealthDataType.STEPS,
-    HealthDataType.ACTIVE_ENERGY_BURNED,
-    HealthDataType.DISTANCE_WALKING_RUNNING,
-  ];
+  /// Get platform-specific data types
+  List<HealthDataType> get _dataTypes {
+    if (Platform.isAndroid) {
+      // Android Health Connect types
+      return [
+        HealthDataType.STEPS,
+        HealthDataType.TOTAL_CALORIES_BURNED,
+        HealthDataType.DISTANCE_DELTA,
+      ];
+    } else {
+      // iOS HealthKit types
+      return [
+        HealthDataType.STEPS,
+        HealthDataType.ACTIVE_ENERGY_BURNED,
+        HealthDataType.DISTANCE_WALKING_RUNNING,
+      ];
+    }
+  }
 
   /// Request permissions for reading health data
-  static List<HealthDataAccess> get _permissions =>
+  List<HealthDataAccess> get _permissions =>
       _dataTypes.map((e) => HealthDataAccess.READ).toList();
 
   /// Initialize the health platform
@@ -47,6 +59,13 @@ class HealthFitnessService implements FitnessService {
       // On Android, check if Health Connect is installed
       if (Platform.isAndroid) {
         final status = await _health.getHealthConnectSdkStatus();
+        debugPrint('🏃 Health Connect SDK status: $status');
+
+        if (status == HealthConnectSdkStatus.sdkUnavailable) {
+          debugPrint('🏃 Health Connect not installed, prompting install...');
+          await _health.installHealthConnect();
+          return false;
+        }
         return status == HealthConnectSdkStatus.sdkAvailable;
       }
       // On iOS, HealthKit is always available
@@ -77,11 +96,41 @@ class HealthFitnessService implements FitnessService {
   Future<bool> requestPermissions() async {
     await _ensureInitialized();
     try {
-      debugPrint('🏃 HealthFitnessService: Requesting permissions...');
-      final authorized = await _health.requestAuthorization(
-        _dataTypes,
-        permissions: _permissions,
+      debugPrint(
+        '🏃 HealthFitnessService: Requesting permissions for types: $_dataTypes',
       );
+
+      // First check if Health Connect is available on Android
+      if (Platform.isAndroid) {
+        final status = await _health.getHealthConnectSdkStatus();
+        if (status != HealthConnectSdkStatus.sdkAvailable) {
+          debugPrint('🏃 Health Connect not available, installing...');
+          await _health.installHealthConnect();
+          return false;
+        }
+      }
+
+      // Request authorization with a retry approach
+      bool authorized = false;
+      try {
+        authorized = await _health.requestAuthorization(
+          _dataTypes,
+          permissions: _permissions,
+        );
+      } catch (e) {
+        debugPrint('🏃 HealthFitnessService: First auth attempt failed - $e');
+        // Retry once after a short delay (launcher may need time to register)
+        await Future.delayed(const Duration(milliseconds: 500));
+        try {
+          authorized = await _health.requestAuthorization(
+            _dataTypes,
+            permissions: _permissions,
+          );
+        } catch (e2) {
+          debugPrint('🏃 HealthFitnessService: Retry also failed - $e2');
+        }
+      }
+
       debugPrint('🏃 HealthFitnessService: Authorization result = $authorized');
       return authorized;
     } catch (e) {
@@ -108,18 +157,22 @@ class HealthFitnessService implements FitnessService {
         types: _dataTypes,
       );
 
-      // Aggregate calories burned
+      // Aggregate calories burned and distance
       double caloriesBurned = 0;
       double distanceKm = 0;
 
       for (final point in healthData) {
-        if (point.type == HealthDataType.ACTIVE_ENERGY_BURNED) {
+        // Handle calories (different types for iOS/Android)
+        if (point.type == HealthDataType.ACTIVE_ENERGY_BURNED ||
+            point.type == HealthDataType.TOTAL_CALORIES_BURNED) {
           final value = point.value;
           if (value is NumericHealthValue) {
             caloriesBurned += value.numericValue.toDouble();
           }
         }
-        if (point.type == HealthDataType.DISTANCE_WALKING_RUNNING) {
+        // Handle distance (different types for iOS/Android)
+        if (point.type == HealthDataType.DISTANCE_WALKING_RUNNING ||
+            point.type == HealthDataType.DISTANCE_DELTA) {
           final value = point.value;
           if (value is NumericHealthValue) {
             // Convert meters to kilometers

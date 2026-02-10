@@ -1,8 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/custom_button.dart';
+import 'package:flutter/services.dart';
 
-/// Gender selection screen - Compact premium design
+/// Premium gender selection screen - Dark emerald green with glassmorphism
 class GenderScreen extends StatefulWidget {
   final String? initialGender;
   final Function(String) onGenderSelected;
@@ -19,144 +19,148 @@ class GenderScreen extends StatefulWidget {
   State<GenderScreen> createState() => _GenderScreenState();
 }
 
-class _GenderScreenState extends State<GenderScreen> {
+class _GenderScreenState extends State<GenderScreen>
+    with SingleTickerProviderStateMixin {
   String? _selectedGender;
+  late AnimationController _glowController;
+
+  // Theme colors
+  static const Color accentGreen = Color(0xFF4ADE80);
+  static const Color accentGreenDark = Color(0xFF22C55E);
 
   @override
   void initState() {
     super.initState();
     _selectedGender = widget.initialGender;
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 12),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 8),
 
-              // Icon
-              Center(
-                child: Container(
+          // Hero image with glassmorphic circle
+          Center(
+            child: AnimatedBuilder(
+              animation: _glowController,
+              builder: (context, child) {
+                return Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primary.withValues(alpha: 0.2),
-                        AppColors.primary.withValues(alpha: 0.05),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
                     shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.person_outline,
-                    size: 48,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Title
-              Text(
-                'What\'s your gender?',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 26,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 8),
-
-              // Subtitle
-              Text(
-                'Help us personalize your experience',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 32),
-
-              // Compact options
-              _buildCompactOption(
-                icon: Icons.male,
-                title: 'Male',
-                value: 'Male',
-              ),
-
-              const SizedBox(height: 12),
-
-              _buildCompactOption(
-                icon: Icons.female,
-                title: 'Female',
-                value: 'Female',
-              ),
-
-              const SizedBox(height: 12),
-
-              _buildCompactOption(
-                icon: Icons.people,
-                title: 'Other',
-                value: 'Other',
-              ),
-
-              const Spacer(),
-
-              // Navigation buttons
-              Row(
-                children: [
-                  if (widget.onBack != null) ...[
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: widget.onBack,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: BorderSide(color: AppColors.border, width: 1.5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          'Previous',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
+                    color: Colors.white.withOpacity(0.08),
+                    border: Border.all(
+                      color: accentGreen.withOpacity(
+                        0.2 + _glowController.value * 0.2,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                  ],
-                  Expanded(
-                    child: CustomButton(
-                      text: 'Continue',
-                      onPressed: _selectedGender != null
-                          ? () => widget.onGenderSelected(_selectedGender!)
-                          : null,
-                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentGreen.withOpacity(
+                          0.15 + _glowController.value * 0.15,
+                        ),
+                        blurRadius: 24,
+                        spreadRadius: 2,
+                      ),
+                    ],
                   ),
-                ],
+                  child: Image.asset(
+                    'assets/images/equality.png',
+                    width: 56,
+                    height: 56,
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // Title
+          const Text(
+            'About You',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: -0.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            'Helps us personalize your experience',
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.white.withOpacity(0.6),
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+
+          const SizedBox(height: 32),
+
+          // Gender options
+          _buildGlassOption(icon: Icons.male, title: 'Male', value: 'Male'),
+
+          const SizedBox(height: 12),
+
+          _buildGlassOption(
+            icon: Icons.female,
+            title: 'Female',
+            value: 'Female',
+          ),
+
+          const SizedBox(height: 12),
+
+          _buildGlassOption(icon: Icons.people, title: 'Other', value: 'Other'),
+
+          const Spacer(),
+
+          // Button Row
+          Row(
+            children: [
+              if (widget.onBack != null) ...[
+                Expanded(
+                  child: _buildOutlineButton(
+                    label: 'Previous',
+                    onPressed: widget.onBack!,
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: _buildGreenButton(
+                  label: 'Continue',
+                  onPressed: _selectedGender != null
+                      ? () => widget.onGenderSelected(_selectedGender!)
+                      : null,
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildCompactOption({
+  Widget _buildGlassOption({
     required IconData icon,
     required String title,
     required String value,
@@ -165,75 +169,162 @@ class _GenderScreenState extends State<GenderScreen> {
 
     return GestureDetector(
       onTap: () {
+        HapticFeedback.selectionClick();
         setState(() {
           _selectedGender = value;
         });
       },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? accentGreen.withOpacity(0.12)
+                  : Colors.white.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected
+                    ? accentGreen.withOpacity(0.6)
+                    : Colors.white.withOpacity(0.1),
+                width: isSelected ? 1.5 : 1,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: accentGreen.withOpacity(0.2),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? accentGreen.withOpacity(0.2)
+                        : Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected
+                        ? accentGreen
+                        : Colors.white.withOpacity(0.6),
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected
+                        ? accentGreen
+                        : Colors.white.withOpacity(0.8),
+                  ),
+                ),
+                const Spacer(),
+                if (isSelected)
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [accentGreen, accentGreenDark],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: accentGreen.withOpacity(0.4),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGreenButton({required String label, VoidCallback? onPressed}) {
+    final isEnabled = onPressed != null;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onPressed,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        height: 56,
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.15),
-                    AppColors.primary.withValues(alpha: 0.05),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
+          gradient: isEnabled
+              ? const LinearGradient(colors: [accentGreen, accentGreenDark])
               : null,
-          color: isSelected ? null : AppColors.surface,
+          color: isEnabled ? null : Colors.white.withOpacity(0.08),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
+          boxShadow: isEnabled
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: accentGreen.withOpacity(0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
                   ),
                 ]
               : null,
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary.withValues(alpha: 0.2)
-                    : AppColors.border.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                size: 28,
-              ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: isEnabled
+                  ? const Color(0xFF0D1F15)
+                  : Colors.white.withOpacity(0.3),
+              letterSpacing: 0.5,
             ),
-            const SizedBox(width: 16),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                color: isSelected ? AppColors.primary : AppColors.textPrimary,
-              ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOutlineButton({
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onPressed,
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withOpacity(0.8),
             ),
-            const Spacer(),
-            if (isSelected)
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check, color: Colors.white, size: 18),
-              ),
-          ],
+          ),
         ),
       ),
     );

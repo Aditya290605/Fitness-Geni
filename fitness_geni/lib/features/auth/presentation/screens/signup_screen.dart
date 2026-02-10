@@ -115,6 +115,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: darkGreen,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
