@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/auth/profile_service.dart';
 import '../../../../core/auth/auth_provider.dart';
@@ -15,7 +14,7 @@ import 'diet_type_screen.dart';
 import 'fitness_goal_screen.dart';
 import 'age_screen.dart';
 
-/// Main onboarding screen - Clean and simple
+/// Premium onboarding screen - Dark emerald green theme
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -23,9 +22,16 @@ class OnboardingScreen extends ConsumerStatefulWidget {
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
+    with SingleTickerProviderStateMixin {
   final PageController _pageController = PageController();
   final OnboardingService _onboardingService = OnboardingService();
+
+  // Onboarding colors matching login screen
+  static const Color darkGreen = Color(0xFF0D1F15);
+  static const Color midGreen = Color(0xFF1A3C2A);
+  static const Color accentGreen = Color(0xFF4ADE80);
+  static const Color accentGreenDark = Color(0xFF22C55E);
 
   int _currentPage = 0;
   bool _isSaving = false;
@@ -36,15 +42,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String? _dietType;
   String? _fitnessGoal;
 
+  late AnimationController _progressGlowController;
+
   @override
   void initState() {
     super.initState();
+    _progressGlowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
     debugPrint('🎯 OnboardingScreen initialized');
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _progressGlowController.dispose();
     super.dispose();
   }
 
@@ -52,8 +65,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (_currentPage < 5) {
       debugPrint('➡️ Moving to page ${_currentPage + 1}');
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
       );
     }
   }
@@ -62,8 +75,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (_currentPage > 0) {
       debugPrint('⬅️ Moving to page ${_currentPage - 1}');
       _pageController.previousPage(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
       );
     }
   }
@@ -83,11 +96,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       return;
     }
 
-    // Show loading state
     setState(() => _isSaving = true);
 
     try {
-      // Get current user directly from Supabase
       debugPrint('🔍 Checking authentication state...');
       final supabaseUser = Supabase.instance.client.auth.currentUser;
 
@@ -97,9 +108,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         debugPrint('❌ No authenticated user found');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: Please log in again'),
-              duration: Duration(seconds: 3),
+            SnackBar(
+              content: const Text('Error: Please log in again'),
+              backgroundColor: Colors.red.shade400,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
           context.go(AppConstants.routeLogin);
@@ -118,7 +133,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
       debugPrint('💾 Saving profile to Supabase for user: ${supabaseUser.id}');
 
-      // Save to Supabase
       final profileService = ProfileService();
       await profileService.updateProfile(
         userId: supabaseUser.id,
@@ -130,22 +144,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         goal: _fitnessGoal!,
       );
 
-      // Also save locally for backward compatibility
       await _onboardingService.saveUserProfile(profile);
 
       if (mounted) {
         debugPrint('✅ Profile saved, refreshing auth state...');
 
-        // Force refresh the auth session to pick up the new profile
         final authService = ref.read(authServiceProvider);
         await authService.refreshProfile();
 
-        // Small delay to ensure auth stream processes the refresh
         await Future.delayed(const Duration(milliseconds: 300));
 
         debugPrint('✅ Auth state refreshed, navigating to main app');
 
-        // Navigate to main - router will handle proper redirect
         if (mounted) {
           context.go(AppConstants.routeMain);
         }
@@ -155,7 +165,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving profile: ${e.toString()}')),
+          SnackBar(
+            content: Text('Error saving profile: ${e.toString()}'),
+            backgroundColor: Colors.red.shade400,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
         );
       }
     }
@@ -163,142 +180,171 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🔄 OnboardingScreen building, currentPage: $_currentPage');
-
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              // Progress indicator
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Step ${_currentPage + 1} of 6',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                          value: (_currentPage + 1) / 6,
-                          backgroundColor: AppColors.border,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.primary,
-                          ),
-                          minHeight: 6,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Pages
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (page) {
-                    setState(() {
-                      _currentPage = page;
-                    });
-                    debugPrint('📄 Page changed to: $page');
-                  },
+      backgroundColor: darkGreen,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [midGreen, darkGreen],
+            stops: [0.0, 0.6],
+          ),
+        ),
+        child: Column(
+          children: [
+            // Premium progress indicator
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                child: Column(
                   children: [
-                    // Step 1: Weight
-                    WeightScreen(
-                      initialWeight: _weight,
-                      onWeightSelected: (weight) {
-                        debugPrint('⚖️ Weight selected: $weight kg');
-                        setState(() {
-                          _weight = weight;
-                        });
-                        _nextPage();
-                      },
-                      onBack: null, // First page, no back
+                    // Step text
+                    Text(
+                      'Step ${_currentPage + 1} of 6',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 1.2,
+                      ),
                     ),
-
-                    // Step 2: Height
-                    HeightScreen(
-                      initialHeight: _height,
-                      onHeightSelected: (height) {
-                        debugPrint('📏 Height selected: $height cm');
-                        setState(() {
-                          _height = height;
-                        });
-                        _nextPage();
+                    const SizedBox(height: 12),
+                    // Glowing progress bar
+                    AnimatedBuilder(
+                      animation: _progressGlowController,
+                      builder: (context, child) {
+                        final glowIntensity =
+                            0.3 + (_progressGlowController.value * 0.4);
+                        return Container(
+                          height: 4,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: accentGreen.withOpacity(
+                                  glowIntensity * ((_currentPage + 1) / 6),
+                                ),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(2),
+                            child: LinearProgressIndicator(
+                              value: (_currentPage + 1) / 6,
+                              backgroundColor: Colors.white.withOpacity(0.1),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                accentGreen,
+                              ),
+                              minHeight: 4,
+                            ),
+                          ),
+                        );
                       },
-                      onBack: _previousPage,
-                    ),
-
-                    // Step 3: Age
-                    AgeScreen(
-                      initialAge: _age,
-                      onAgeSelected: (age) {
-                        debugPrint('🎂 Age selected: $age');
-                        setState(() {
-                          _age = age;
-                        });
-                        _nextPage();
-                      },
-                      onBack: _previousPage,
-                    ),
-
-                    // Step 4: Gender
-                    GenderScreen(
-                      initialGender: _gender,
-                      onGenderSelected: (gender) {
-                        debugPrint('👤 Gender selected: $gender');
-                        setState(() {
-                          _gender = gender;
-                        });
-                        _nextPage();
-                      },
-                      onBack: _previousPage,
-                    ),
-
-                    // Step 5: Diet Type
-                    DietTypeScreen(
-                      initialDietType: _dietType,
-                      onDietTypeSelected: (dietType) {
-                        debugPrint('🥗 Diet type selected: $dietType');
-                        setState(() {
-                          _dietType = dietType;
-                        });
-                        _nextPage();
-                      },
-                      onBack: _previousPage,
-                    ),
-
-                    // Step 6: Fitness Goal
-                    FitnessGoalScreen(
-                      initialGoal: _fitnessGoal,
-                      isLoading: _isSaving,
-                      onGoalSelected: (goal) {
-                        debugPrint('🎯 Goal selected: $goal');
-                        setState(() {
-                          _fitnessGoal = goal;
-                        });
-                        _completeOnboarding();
-                      },
-                      onBack: _previousPage,
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
 
-          // Removed full-screen loading overlay - loading is now shown in button
-        ],
+            // Pages
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (page) {
+                  setState(() {
+                    _currentPage = page;
+                  });
+                  debugPrint('📄 Page changed to: $page');
+                },
+                children: [
+                  // Step 1: Weight
+                  WeightScreen(
+                    initialWeight: _weight,
+                    onWeightSelected: (weight) {
+                      debugPrint('⚖️ Weight selected: $weight kg');
+                      setState(() {
+                        _weight = weight;
+                      });
+                      _nextPage();
+                    },
+                    onBack: null,
+                  ),
+
+                  // Step 2: Height
+                  HeightScreen(
+                    initialHeight: _height,
+                    onHeightSelected: (height) {
+                      debugPrint('📏 Height selected: $height cm');
+                      setState(() {
+                        _height = height;
+                      });
+                      _nextPage();
+                    },
+                    onBack: _previousPage,
+                  ),
+
+                  // Step 3: Age
+                  AgeScreen(
+                    initialAge: _age,
+                    onAgeSelected: (age) {
+                      debugPrint('🎂 Age selected: $age');
+                      setState(() {
+                        _age = age;
+                      });
+                      _nextPage();
+                    },
+                    onBack: _previousPage,
+                  ),
+
+                  // Step 4: Gender
+                  GenderScreen(
+                    initialGender: _gender,
+                    onGenderSelected: (gender) {
+                      debugPrint('👤 Gender selected: $gender');
+                      setState(() {
+                        _gender = gender;
+                      });
+                      _nextPage();
+                    },
+                    onBack: _previousPage,
+                  ),
+
+                  // Step 5: Diet Type
+                  DietTypeScreen(
+                    initialDietType: _dietType,
+                    onDietTypeSelected: (dietType) {
+                      debugPrint('🥗 Diet type selected: $dietType');
+                      setState(() {
+                        _dietType = dietType;
+                      });
+                      _nextPage();
+                    },
+                    onBack: _previousPage,
+                  ),
+
+                  // Step 6: Fitness Goal
+                  FitnessGoalScreen(
+                    initialGoal: _fitnessGoal,
+                    isLoading: _isSaving,
+                    onGoalSelected: (goal) {
+                      debugPrint('🎯 Goal selected: $goal');
+                      setState(() {
+                        _fitnessGoal = goal;
+                      });
+                      _completeOnboarding();
+                    },
+                    onBack: _previousPage,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
