@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'fitness_service.dart';
 
 /// Implementation of FitnessService using the health package
@@ -100,8 +101,14 @@ class HealthFitnessService implements FitnessService {
         '🏃 HealthFitnessService: Requesting permissions for types: $_dataTypes',
       );
 
-      // First check if Health Connect is available on Android
       if (Platform.isAndroid) {
+        // Step 1: Request ACTIVITY_RECOGNITION runtime permission first
+        // This is required before Health Connect can grant health permissions
+        debugPrint('🏃 Requesting ACTIVITY_RECOGNITION runtime permission...');
+        final activityResult = await Permission.activityRecognition.request();
+        debugPrint('🏃 ACTIVITY_RECOGNITION result: $activityResult');
+
+        // Step 2: Check if Health Connect is available
         final status = await _health.getHealthConnectSdkStatus();
         if (status != HealthConnectSdkStatus.sdkAvailable) {
           debugPrint('🏃 Health Connect not available, installing...');
@@ -110,26 +117,12 @@ class HealthFitnessService implements FitnessService {
         }
       }
 
-      // Request authorization with a retry approach
-      bool authorized = false;
-      try {
-        authorized = await _health.requestAuthorization(
-          _dataTypes,
-          permissions: _permissions,
-        );
-      } catch (e) {
-        debugPrint('🏃 HealthFitnessService: First auth attempt failed - $e');
-        // Retry once after a short delay (launcher may need time to register)
-        await Future.delayed(const Duration(milliseconds: 500));
-        try {
-          authorized = await _health.requestAuthorization(
-            _dataTypes,
-            permissions: _permissions,
-          );
-        } catch (e2) {
-          debugPrint('🏃 HealthFitnessService: Retry also failed - $e2');
-        }
-      }
+      // Step 3: Request Health Connect / HealthKit authorization
+      debugPrint('🏃 Requesting health authorization...');
+      final authorized = await _health.requestAuthorization(
+        _dataTypes,
+        permissions: _permissions,
+      );
 
       debugPrint('🏃 HealthFitnessService: Authorization result = $authorized');
       return authorized;
