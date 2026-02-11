@@ -1,7 +1,7 @@
 # 🧬 Fitness Geni
 
 <div align="center">
-  <img src="assets/logo/logo.png" alt="Fitness Geni Logo" width="120" height="120">
+  <img src="fitness_geni/assets/logo/logo.png" alt="Fitness Geni Logo" width="220" height="220">
 </div>
 
 <div align="center">
@@ -102,53 +102,102 @@ graph TD
 <table>
   <tr>
     <td align="center">
-      <img src="assets/images/placeholder_splash.png" width="200" alt="Splash Screen"/>
+      <img src="https://i.postimg.cc/PrpMnL2Z/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-23-40.png" width="200" alt="Splash Screen"/>
       <br/>
       <sub><b>Splash Screen</b></sub>
     </td>
     <td align="center">
-      <img src="assets/images/placeholder_login.png" width="200" alt="Login"/>
+      <img src="https://i.postimg.cc/fTGfzwPJ/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-23-42.png" width="200" alt="Login"/>
       <br/>
-      <sub><b>Authentication</b></sub>
+      <sub><b>Sign In</b></sub>
     </td>
     <td align="center">
-      <img src="assets/images/placeholder_onboarding.png" width="200" alt="Onboarding"/>
+      <img src="https://i.postimg.cc/DzgrP1wy/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-25-25.png" width="200" alt="Onboarding"/>
       <br/>
-      <sub><b>Onboarding</b></sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="assets/images/placeholder_home.png" width="200" alt="Home Dashboard"/>
-      <br/>
-      <sub><b>Home Dashboard</b></sub>
+      <sub><b>Sign up</b></sub>
     </td>
     <td align="center">
-      <img src="assets/images/breakfast.png" width="200" alt="Breakfast Tracking"/>
+      <img src="https://i.postimg.cc/NMCRWYTh/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-25-54.png" width="200" alt="Onboarding"/>
       <br/>
-      <sub><b>Nutrition: Breakfast</b></sub>
-    </td>
-    <td align="center">
-      <img src="assets/images/lunch.png" width="200" alt="Lunch Tracking"/>
-      <br/>
-      <sub><b>Nutrition: Lunch</b></sub>
+      <sub><b>Enter your weight</b></sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="assets/images/dinner.png" width="200" alt="Dinner Tracking"/>
+      <img src="https://i.postimg.cc/zv9KGj0W/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-25-59.png" width="200" alt="Splash Screen"/>
       <br/>
-      <sub><b>Nutrition: Dinner</b></sub>
+      <sub><b>Enter height</b></sub>
     </td>
     <td align="center">
-      <img src="assets/images/placeholder_stats.png" width="200" alt="Statistics"/>
+      <img src="https://i.postimg.cc/m2H76vgp/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-26-02.png" width="200" alt="Login"/>
       <br/>
-      <sub><b>Health Statistics</b></sub>
+      <sub><b>Age</b></sub>
     </td>
     <td align="center">
-      <img src="assets/images/placeholder_profile.png" width="200" alt="Profile"/>
+      <img src="https://i.postimg.cc/0yGD97mC/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-26-10.png" width="200" alt="Onboarding"/>
       <br/>
-      <sub><b>User Profile</b></sub>
+      <sub><b>Enter diet type</b></sub>
+    </td>
+    <td align="center">
+      <img src="https://i.postimg.cc/MTHQ04L7/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-26-15.png" width="200" alt="Onboarding"/>
+      <br/>
+      <sub><b>Set your goals</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="https://i.postimg.cc/c1VFHMK5/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-26-18.png" width="200" alt="Login"/>
+      <br/>
+      <sub><b>Generate new meals</b></sub>
+    </td>
+    <td align="center">
+      <img src="https://i.postimg.cc/3JmnD4mg/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-26-36.png" width="200" alt="Onboarding"/>
+      <br/>
+      <sub><b>Add your ingridents</b></sub>
+    </td>
+    <td align="center">
+      <img src="https://i.postimg.cc/fLVvWJD6/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-26-48.png" width="200" alt="Onboarding"/>
+      <br/>
+      <sub><b>Let Ai decide</b></sub>
+    </td>
+     <td align="center">
+      <img src="https://i.postimg.cc/hvxbx6Jr/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-26-52.png" width="200" alt="Splash Screen"/>
+      <br/>
+      <sub><b>Wait while meals generated</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="https://i.postimg.cc/hPW0gD6G/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-27-26.png" width="200" alt="Login"/>
+      <br/>
+      <sub><b>Preview meals</b></sub>
+    </td>
+    <td align="center">
+      <img src="https://i.postimg.cc/13M0ppt8/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-27-29.png" width="200" alt="Onboarding"/>
+      <br/>
+      <sub><b>Meals details</b></sub>
+    </td>
+    <td align="center">
+      <img src="https://i.postimg.cc/YSs1PMQt/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-27-38.png" width="200" alt="Onboarding"/>
+      <br/>
+      <sub><b>Home screen with daily track</b></sub>
+    </td>
+    <td align="center">
+      <img src="https://i.postimg.cc/RhrwMdPP/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-27-47.png" width="200" alt="Splash Screen"/>
+      <br/>
+      <sub><b>Track daily progress</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="https://i.postimg.cc/XqwdX5mG/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-27-55.png" width="200" alt="Login"/>
+      <br/>
+      <sub><b>Also track steps, daily protein intake</b></sub>
+    </td>
+    <td align="center">
+      <img src="https://i.postimg.cc/zDWndmv8/Simulator-Screenshot-i-Phone-16e-2026-02-11-at-09-26-30.png" width="200" alt="Onboarding"/>
+      <br/>
+      <sub><b>Profile screen</b></sub>
     </td>
   </tr>
 </table>
