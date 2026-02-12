@@ -5,17 +5,32 @@ import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
 import 'core/supabase/supabase_client.dart';
 import 'core/router/auth_redirect.dart';
+import 'core/services/meal_notification_service.dart';
 import 'features/splash/presentation/screens/splash_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/signup_screen.dart';
 import 'features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'shared/presentation/main_navigation.dart';
 
+/// Global navigator key for notification tap navigation
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Supabase
   await initializeSupabase();
+
+  // Initialize local notification service (timezone + plugin + permissions)
+  await MealNotificationService.instance.initialize();
+
+  // Set notification tap callback → navigate to Home
+  onNotificationTapGlobal = () {
+    final context = rootNavigatorKey.currentContext;
+    if (context != null) {
+      GoRouter.of(context).go(AppConstants.routeMain);
+    }
+  };
 
   runApp(
     // Wrap app with ProviderScope for Riverpod state management
@@ -53,6 +68,7 @@ class FitnessGeniApp extends ConsumerWidget {
 /// - Handles onboarding completion checks
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppConstants.routeSplash,
 
     // Auth-aware redirect logic

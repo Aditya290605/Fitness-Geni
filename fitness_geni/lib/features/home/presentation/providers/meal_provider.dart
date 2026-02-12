@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_provider.dart';
+import '../../../../core/services/meal_notification_service.dart';
 import '../../../../core/services/meal_service.dart';
 import '../../domain/models/meal.dart';
 
@@ -80,6 +82,9 @@ class MealNotifier extends StateNotifier<MealState> {
 
       state = state.copyWith(meals: meals, isLoading: false);
       _hasLoaded = true;
+
+      // Re-evaluate notifications with updated meal state
+      _evaluateNotifications();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -100,6 +105,9 @@ class MealNotifier extends StateNotifier<MealState> {
 
       // Persist to Supabase
       await _mealService.markMealDone(mealId, true);
+
+      // Re-evaluate notifications — meal marked done may cancel a reminder
+      _evaluateNotifications();
     } catch (e) {
       // Revert on error
       await loadMeals(force: true);
@@ -140,11 +148,22 @@ class MealNotifier extends StateNotifier<MealState> {
       // Reload meals from Supabase to get proper daily_plan_meal IDs
       await loadMeals(force: true);
 
+      // Note: loadMeals(force: true) already calls _evaluateNotifications()
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }
+  }
+
+  /// Re-evaluate and schedule/cancel notifications based on current meal state.
+  /// Fires asynchronously — does not block the caller.
+  void _evaluateNotifications() {
+    MealNotificationService.instance
+        .evaluateAndSchedule(state.meals)
+        .catchError((e) {
+          debugPrint('⚠️ Notification evaluation failed: $e');
+        });
   }
 }
 

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_provider.dart';
 import '../../../../core/auth/profile_adapter.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/meal_notification_service.dart';
 
 /// Premium Profile Screen - Clean, calm, minimal design
 class ProfileScreen extends ConsumerWidget {
@@ -634,6 +635,11 @@ class ProfileScreen extends ConsumerWidget {
       );
 
       final authService = ref.read(authServiceProvider);
+
+      // Cancel all meal notifications before logging out
+      await MealNotificationService.instance.cancelAllNotifications();
+      await MealNotificationService.instance.clearState();
+
       await authService.logout();
 
       if (context.mounted) {

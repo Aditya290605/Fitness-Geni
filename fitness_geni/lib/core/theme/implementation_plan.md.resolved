@@ -1,0 +1,220 @@
+# Smart Local Meal Reminder System — Revised Architecture
+
+A fully local, background-capable notification system with deterministic daily lifecycle.
+
+---
+
+## Design Decisions
+
+### 1. One-Time Scheduling (Not Repeating)
+
+> [!IMPORTANT]
+> We use **one-time** `zonedSchedule()` calls **without** `matchDateTimeComponents`. No repeating notifications. Every notification is explicitly scheduled for a specific date+time and re-evaluated on each app open.
+
+**Why:** Repeating notifications can go stale if meal state changes after scheduling. One-time scheduling ensures every notification reflects the current meal reality.
+
+### 2. Daily Reset via `lastEvaluationDate`
+
+On every app open, check if today's date differs from stored `lastEvaluationDate`:
+```
+if (lastEvaluationDate != today) {
+    cancelAll();
+    loadTodayMeals();
+    evaluateAndSchedule(todayMeals);
+    lastEvaluationDate = today;
+}
+```
+
+### 3. Non-App-Open Fallback
+
+> [!NOTE]
+> If the user never opens the app, Supabase meal data can't be checked — but we still want a morning reminder.
+
+**Strategy:** At the end of each daily evaluation, schedule **tomorrow's morning notification** (ID=4) as a one-time fallback with a generic message. When the app opens the next day, the daily reset cancels it and replaces with today's accurate notifications.
+
+| Scenario | Result |
+|----------|--------|
+| App opened daily | Smart, condition-based notifications ✅ |
+| App not opened next day | Generic "Plan your meals" fires at 8:30 AM ✅ |
+| App opened late next day | Daily reset runs, cancels stale, schedules accurate ✅ |
+
+### 4. `evaluateAndSchedule()` Contract
+
+```
+1. Cancel ALL (IDs 1-4)
+2. Check current time — SKIP past-time notifications
+3. For each future window, check meal condition:
+   - Morning (8:30 AM): meals empty → schedule ID=1
+   - Lunch  (2:15 PM): "Afternoon" meal not done → schedule ID=2
+   - Dinner (8:45 PM): "Night" meal not done → schedule ID=3
+4. Always schedule tomorrow's morning fallback (ID=4)
+5. Save lastEvaluationDate = today
+```
+
+**Time-passed validation:**
+```dart
+final now = DateTime.now();
+if (now.hour < 8 || (now.hour == 8 && now.minute < 30)) {
+  // Can still schedule morning
+}
+if (now.hour < 14 || (now.hour == 14 && now.minute < 15)) {
+  // Can still schedule lunch
+}
+// etc.
+```
+
+### 5. Timezone Change Handling
+
+On app start:
+1. Detect timezone via `flutter_timezone`
+2. Compare with stored `lastTimezone`
+3. If changed → cancel all → update `tz.local` → re-evaluate
+
+### 6. Midnight Refresh: Option A (Lightweight)
+
+Re-evaluate on next app open only. The tomorrow-morning fallback ensures coverage even without midnight processing. No `android_alarm_manager_plus` needed.
+
+---
+
+## Notification ID Map
+
+| ID | Notification | Type |
+|----|-------------|------|
+| 1 | Morning Reminder (8:30 AM) | One-time, today |
+| 2 | Lunch Reminder (2:15 PM) | One-time, today |
+| 3 | Dinner Reminder (8:45 PM) | One-time, today |
+| 4 | Tomorrow Morning Fallback (8:30 AM +1 day) | One-time, generic |
+
+---
+
+## Lifecycle Flow
+
+```mermaid
+flowchart TD
+    A[App Opens] --> B{lastEvalDate == today?}
+    B -->|Yes| C{Meal state changed?}
+    B -->|No / First open today| D[Cancel ALL notifications]
+    D --> E[Detect timezone change]
+    E --> F[Load today's meals]
+    F --> G[evaluateAndSchedule]
+    G --> H{Current time < 8:30?}
+    H -->|Yes| I{Meals empty?}
+    I -->|Yes| J[Schedule Morning ID=1]
+    I -->|No| K[Skip morning]
+    H -->|No| K
+    G --> L{Current time < 14:15?}
+    L -->|Yes| M{Lunch not done?}
+    M -->|Yes| N[Schedule Lunch ID=2]
+    M -->|No| O[Skip lunch]
+    L -->|No| O
+    G --> P{Current time < 20:45?}
+    P -->|Yes| Q{Dinner not done?}
+    Q -->|Yes| R[Schedule Dinner ID=3]
+    Q -->|No| S[Skip dinner]
+    P -->|No| S
+    G --> T[Schedule tomorrow morning fallback ID=4]
+    T --> U[Save lastEvalDate + timezone]
+
+    C -->|Yes via markDone/saveMeals| G
+    C -->|No| V[Do nothing]
+```
+
+---
+
+## Edge Case Handling
+
+| Edge Case | Handling |
+|-----------|----------|
+| System time changed manually | Daily reset catches date mismatch on next app open |
+| Notifications disabled → re-enabled | Permission re-requested on app open; reschedule runs |
+| Device reboot | `ScheduledNotificationBootReceiver` restores scheduled notifications |
+| Logout while scheduled | `cancelAllNotifications()` called in logout flow |
+| Meal API failure (empty list) | Treated as "no meals" → morning reminder scheduled |
+| Timezone change (travel) | Detected on app open → cancel + reschedule |
+| App not opened for multiple days | Tomorrow-morning fallback fires daily-ish; stale ones expire naturally |
+
+---
+
+## Proposed Changes
+
+### Dependencies
+
+#### [MODIFY] [pubspec.yaml](file:///Users/adityamagar/Fitness-Geni/fitness_geni/pubspec.yaml)
+
+Add: `flutter_local_notifications`, `timezone`, `flutter_timezone`
+
+---
+
+### Android Configuration
+
+#### [MODIFY] [AndroidManifest.xml](file:///Users/adityamagar/Fitness-Geni/fitness_geni/android/app/src/main/AndroidManifest.xml)
+
+Add permissions: `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`, `SCHEDULE_EXACT_ALARM`
+Add receivers: `ScheduledNotificationReceiver`, `ScheduledNotificationBootReceiver`
+
+---
+
+### Core Service
+
+#### [NEW] [meal_notification_service.dart](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/core/services/meal_notification_service.dart)
+
+Singleton service implementing the full lifecycle above. Key methods:
+
+| Method | Purpose |
+|--------|---------|
+| [initialize()](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/features/fit/presentation/providers/fitness_provider.dart#62-100) | Init plugin, create channel, request permissions, detect timezone |
+| `evaluateAndSchedule(List<Meal>)` | Cancel-all → time-check → condition-check → schedule → save date |
+| `cancelAllNotifications()` | Cancel IDs 1-4 |
+| `checkDailyReset()` | Compare `lastEvalDate` with today; return true if reset needed |
+| `checkTimezoneChange()` | Compare stored timezone; reconfigure if changed |
+| `_onNotificationTapped(payload)` | Navigate to Home via GoRouter |
+
+Internal state (SharedPreferences):
+- `lastEvaluationDate` — ISO date string
+- `lastTimezone` — timezone name string
+
+---
+
+### Integration
+
+#### [MODIFY] [main.dart](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/main.dart)
+
+- Init timezone + notification service in [main()](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/main.dart#14-25)
+- Set up global navigation key for notification tap handling
+
+#### [MODIFY] [meal_provider.dart](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/features/home/presentation/providers/meal_provider.dart)
+
+Call `evaluateAndSchedule(state.meals)` after:
+- [loadMeals()](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/features/home/presentation/providers/meal_provider.dart#61-87) success
+- [markMealDone()](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/core/services/meal_service.dart#221-302) success
+- [saveMealsAndReload()](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/features/home/presentation/providers/meal_provider.dart#125-149) success
+
+#### [MODIFY] [splash_screen.dart](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/features/splash/presentation/screens/splash_screen.dart)
+
+After authenticated session restore → trigger `checkDailyReset()` → if needed, load meals + evaluate
+
+#### [MODIFY] [profile_screen.dart](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/features/profile/presentation/screens/profile_screen.dart)
+
+Add `cancelAllNotifications()` in [_performLogout()](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/features/profile/presentation/screens/profile_screen.dart#627-655)
+
+---
+
+## Verification Plan
+
+### Automated
+- Zero compile errors via analyzer on all modified files
+
+### Manual On-Device Testing
+
+| # | Test Scenario | Expected |
+|---|--------------|----------|
+| 1 | No meals created, before 8:30 AM | Morning notification scheduled |
+| 2 | Meals created before 8:30 AM | Morning notification cancelled |
+| 3 | Open app at 10 AM, no meals | Morning skipped (past time), lunch+dinner scheduled |
+| 4 | Mark lunch done before 2:15 PM | Lunch notification cancelled immediately |
+| 5 | Close app, don't open next day | Generic morning fallback fires at 8:30 AM |
+| 6 | Open app next day | Daily reset runs, fresh evaluation |
+| 7 | Tap notification | App opens to Home tab |
+| 8 | Logout | All notifications cancelled |
+| 9 | Reboot device | Notifications survive |
+| 10 | Change timezone | Notifications rescheduled on next app open |
