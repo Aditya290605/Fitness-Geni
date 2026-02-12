@@ -85,8 +85,10 @@ class FitnessNotifier extends StateNotifier<FitnessState> {
       _hasCheckedPermissions = true;
 
       // If we have permissions, load data
+      // Pass force:true because we already set isLoading=true above,
+      // which would cause loadActivityData()'s guard to block
       if (hasPerms) {
-        await loadActivityData();
+        await loadActivityData(force: true);
       } else {
         state = state.copyWith(isLoading: false);
       }
