@@ -145,21 +145,27 @@ class AuthService extends SupabaseService {
   }
 
   /// Restore session on app launch
+  ///
+  /// Attempts to restore the user's session by:
+  /// 1. Checking if Supabase has an active session (handles auto-refresh)
+  /// 2. If expired, attempting a token refresh
+  /// 3. Fetching the user profile on success
   Future<AuthState> restoreSession() async {
     try {
       debugPrint('🔄 Attempting to restore session...');
 
-      // 1. Check if session is valid
+      // 1. Check if session manager considers session valid
+      //    (this now attempts token refresh internally if expired)
       final isValid = await _sessionManager.isSessionValid();
       if (!isValid) {
-        debugPrint('❌ No valid session found');
+        debugPrint('❌ No valid session found (refresh also failed)');
         return const AuthState.unauthenticated();
       }
 
-      // 2. Get current session from Supabase
+      // 2. Get current session from Supabase (should be fresh after isSessionValid)
       final session = supabase.auth.currentSession;
       if (session == null) {
-        debugPrint('❌ No active Supabase session');
+        debugPrint('❌ No active Supabase session after validation');
         await _sessionManager.clearSession();
         return const AuthState.unauthenticated();
       }
@@ -171,16 +177,21 @@ class AuthService extends SupabaseService {
         return const AuthState.unauthenticated();
       }
 
-      // 3. Fetch user profile
+      // 3. Update stored session with the latest tokens
+      await _sessionManager.saveSession(session);
+
+      // 4. Fetch user profile
       final profileData = await supabase
           .from('profiles')
           .select()
           .eq('id', currentUser.id)
-          .single();
+          .maybeSingle();
 
-      final profile = Profile.fromJson(profileData);
+      final profile = profileData != null
+          ? Profile.fromJson(profileData)
+          : null;
 
-      // 4. Return authenticated state
+      // 5. Return authenticated state
       final user = User(id: currentUser.id, email: currentUser.email ?? '');
 
       debugPrint('✅ Session restored for user: ${user.email}');

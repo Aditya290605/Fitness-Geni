@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/auth/auth_provider.dart';
 import '../../../../core/constants/app_constants.dart';
 
 /// Premium Splash Screen - Green theme matching auth screens
-class SplashScreen extends StatefulWidget {
+///
+/// This screen handles session restoration and navigates based on auth state:
+/// - Authenticated + onboarding complete → Main app
+/// - Authenticated + no onboarding → Onboarding screen
+/// - Unauthenticated → Login screen
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   // Premium Color Palette
   static const Color primaryGreen = Color(0xFF3D6B4A);
@@ -45,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
-    _navigateAfterDelay();
+    _restoreSessionAndNavigate();
   }
 
   @override
@@ -54,20 +60,43 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
-  Future<void> _navigateAfterDelay() async {
-    await Future.delayed(const Duration(milliseconds: 2500));
+  Future<void> _restoreSessionAndNavigate() async {
+    // Show splash for at least 2 seconds for branding
+    final minSplashDuration = Future.delayed(
+      const Duration(milliseconds: 2000),
+    );
 
-    final prefs = await SharedPreferences.getInstance();
-    final onboardingCompleted =
-        prefs.getBool(AppConstants.keyOnboardingCompleted) ?? false;
+    // Attempt to restore existing session
+    final authService = ref.read(authServiceProvider);
+    final authState = await authService.restoreSession();
+
+    // Wait for minimum splash duration
+    await minSplashDuration;
 
     if (!mounted) return;
 
-    if (onboardingCompleted) {
-      context.go(AppConstants.routeLogin);
-    } else {
-      context.go(AppConstants.routeLogin);
-    }
+    // Navigate based on restored auth state
+    authState.map(
+      loading: (_) {
+        // Shouldn't happen, but fallback to login
+        context.go(AppConstants.routeLogin);
+      },
+      authenticated: (authenticated) {
+        // Check if onboarding is complete
+        final hasCompletedOnboarding = authenticated.profile?.goal != null;
+        if (hasCompletedOnboarding) {
+          debugPrint('✅ Session restored - navigating to main app');
+          context.go(AppConstants.routeMain);
+        } else {
+          debugPrint('✅ Session restored - needs onboarding');
+          context.go(AppConstants.routeOnboarding);
+        }
+      },
+      unauthenticated: (_) {
+        debugPrint('ℹ️ No session - navigating to login');
+        context.go(AppConstants.routeLogin);
+      },
+    );
   }
 
   @override

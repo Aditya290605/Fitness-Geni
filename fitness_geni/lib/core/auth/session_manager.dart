@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -41,16 +42,41 @@ class SessionManager {
     }
   }
 
-  /// Check if session is valid (not expired)
+  /// Check if session is valid, attempting token refresh if expired
+  ///
+  /// Instead of immediately failing on expired tokens, this tries to
+  /// refresh the session via Supabase's built-in refresh mechanism.
+  /// This allows sessions to survive long background periods.
   Future<bool> isSessionValid() async {
-    final expiresAtStr = await _storage.read(key: _keyExpiresAt);
-    if (expiresAtStr == null) return false;
+    // First check: do we have any stored session at all?
+    final refreshToken = await _storage.read(key: _keyRefreshToken);
+    if (refreshToken == null) {
+      debugPrint('❌ SessionManager: No refresh token found');
+      return false;
+    }
 
-    final expiresAt = int.tryParse(expiresAtStr);
-    if (expiresAt == null) return false;
+    // Check if the current Supabase session is still active
+    final currentSession = Supabase.instance.client.auth.currentSession;
+    if (currentSession != null) {
+      debugPrint('✅ SessionManager: Active Supabase session found');
+      // Update stored tokens with latest values
+      await saveSession(currentSession);
+      return true;
+    }
 
-    // Check if session is expired (with 5 minute buffer)
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    return expiresAt > (now + 300);
+    // No active session — try refreshing using stored refresh token
+    try {
+      debugPrint('🔄 SessionManager: Attempting token refresh...');
+      final response = await Supabase.instance.client.auth.refreshSession();
+      if (response.session != null) {
+        debugPrint('✅ SessionManager: Token refresh successful');
+        await saveSession(response.session!);
+        return true;
+      }
+    } catch (e) {
+      debugPrint('❌ SessionManager: Token refresh failed: $e');
+    }
+
+    return false;
   }
 }

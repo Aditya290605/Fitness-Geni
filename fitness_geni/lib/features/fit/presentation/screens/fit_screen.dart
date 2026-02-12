@@ -24,10 +24,12 @@ class _FitScreenState extends ConsumerState<FitScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize fitness provider on first load
+    // Initialize fitness provider and load meal data on first load
     Future.microtask(() {
       ref.read(fitnessProvider.notifier).initialize();
       ref.read(perfectDaysProvider.notifier).loadPerfectDays();
+      // Load meals so protein progress card has data
+      ref.read(mealProvider.notifier).loadMeals();
     });
   }
 
@@ -47,8 +49,11 @@ class _FitScreenState extends ConsumerState<FitScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            await ref.read(fitnessProvider.notifier).refresh();
-            await ref.read(perfectDaysProvider.notifier).refresh();
+            await Future.wait([
+              ref.read(fitnessProvider.notifier).refresh(),
+              ref.read(perfectDaysProvider.notifier).refresh(),
+              ref.read(mealProvider.notifier).loadMeals(force: true),
+            ]);
           },
           color: AppColors.primary,
           child: SingleChildScrollView(
