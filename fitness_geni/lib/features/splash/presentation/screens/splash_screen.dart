@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_provider.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/meal_notification_service.dart';
+import '../../../home/presentation/providers/meal_provider.dart';
 
 /// Premium Splash Screen - Green theme matching auth screens
 ///
@@ -86,6 +88,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         final hasCompletedOnboarding = authenticated.profile?.goal != null;
         if (hasCompletedOnboarding) {
           debugPrint('✅ Session restored - navigating to main app');
+
+          // Trigger daily notification reset check in background
+          _triggerNotificationCheck();
+
           context.go(AppConstants.routeMain);
         } else {
           debugPrint('✅ Session restored - needs onboarding');
@@ -97,6 +103,26 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         context.go(AppConstants.routeLogin);
       },
     );
+  }
+
+  /// Check if daily notification reset is needed and trigger evaluation.
+  /// Runs in background — does not block navigation.
+  void _triggerNotificationCheck() {
+    final notifService = MealNotificationService.instance;
+    notifService
+        .checkDailyResetNeeded()
+        .then((needsReset) {
+          if (needsReset) {
+            debugPrint(
+              '🔔 Splash: Daily reset needed, loading meals for evaluation',
+            );
+            // Load meals and evaluate — the meal provider will call evaluateAndSchedule
+            ref.read(mealProvider.notifier).loadMeals(force: true);
+          }
+        })
+        .catchError((e) {
+          debugPrint('⚠️ Splash: Notification check failed: $e');
+        });
   }
 
   @override
