@@ -99,8 +99,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         }
       },
       unauthenticated: (_) {
-        debugPrint('ℹ️ No session - navigating to login');
-        context.go(AppConstants.routeLogin);
+        debugPrint('ℹ️ No session - navigating to get started');
+        context.go(AppConstants.routeGetStarted);
       },
     );
   }

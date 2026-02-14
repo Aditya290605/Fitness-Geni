@@ -14,7 +14,7 @@ import 'diet_type_screen.dart';
 import 'fitness_goal_screen.dart';
 import 'age_screen.dart';
 
-/// Premium onboarding screen - Dark emerald green theme
+/// Premium onboarding screen - Clean white theme with primaryGreen accents
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -22,16 +22,14 @@ class OnboardingScreen extends ConsumerStatefulWidget {
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
-    with SingleTickerProviderStateMixin {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   final OnboardingService _onboardingService = OnboardingService();
 
-  // Onboarding colors matching login screen
-  static const Color darkGreen = Color(0xFF0D1F15);
-  static const Color midGreen = Color(0xFF1A3C2A);
-  static const Color accentGreen = Color(0xFF4ADE80);
-  static const Color accentGreenDark = Color(0xFF22C55E);
+  // Theme colors
+  static const Color primaryGreen = Color(0xFF3D6B4A);
+  static const Color lightGreenBg = Color(0xFFEDF5F0);
+  static const Color textGrey = Color(0xFF6B7280);
 
   int _currentPage = 0;
   bool _isSaving = false;
@@ -42,22 +40,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   String? _dietType;
   String? _fitnessGoal;
 
-  late AnimationController _progressGlowController;
-
   @override
   void initState() {
     super.initState();
-    _progressGlowController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: true);
     debugPrint('🎯 OnboardingScreen initialized');
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    _progressGlowController.dispose();
     super.dispose();
   }
 
@@ -181,170 +172,144 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: darkGreen,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [midGreen, darkGreen],
-            stops: [0.0, 0.6],
-          ),
-        ),
-        child: Column(
-          children: [
-            // Premium progress indicator
-            SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                child: Column(
-                  children: [
-                    // Step text
-                    Text(
-                      'Step ${_currentPage + 1} of 6',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 1.2,
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          // Progress indicator
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+              child: Column(
+                children: [
+                  // Step text
+                  Text(
+                    'Step ${_currentPage + 1} of 6',
+                    style: const TextStyle(
+                      color: textGrey,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Progress bar
+                  Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: (_currentPage + 1) / 6,
+                        backgroundColor: lightGreenBg,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          primaryGreen,
+                        ),
+                        minHeight: 4,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    // Glowing progress bar
-                    AnimatedBuilder(
-                      animation: _progressGlowController,
-                      builder: (context, child) {
-                        final glowIntensity =
-                            0.3 + (_progressGlowController.value * 0.4);
-                        return Container(
-                          height: 4,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: accentGreen.withOpacity(
-                                  glowIntensity * ((_currentPage + 1) / 6),
-                                ),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: LinearProgressIndicator(
-                              value: (_currentPage + 1) / 6,
-                              backgroundColor: Colors.white.withOpacity(0.1),
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                accentGreen,
-                              ),
-                              minHeight: 4,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Pages
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (page) {
-                  setState(() {
-                    _currentPage = page;
-                  });
-                  debugPrint('📄 Page changed to: $page');
-                },
-                children: [
-                  // Step 1: Weight
-                  WeightScreen(
-                    initialWeight: _weight,
-                    onWeightSelected: (weight) {
-                      debugPrint('⚖️ Weight selected: $weight kg');
-                      setState(() {
-                        _weight = weight;
-                      });
-                      _nextPage();
-                    },
-                    onBack: null,
-                  ),
-
-                  // Step 2: Height
-                  HeightScreen(
-                    initialHeight: _height,
-                    onHeightSelected: (height) {
-                      debugPrint('📏 Height selected: $height cm');
-                      setState(() {
-                        _height = height;
-                      });
-                      _nextPage();
-                    },
-                    onBack: _previousPage,
-                  ),
-
-                  // Step 3: Age
-                  AgeScreen(
-                    initialAge: _age,
-                    onAgeSelected: (age) {
-                      debugPrint('🎂 Age selected: $age');
-                      setState(() {
-                        _age = age;
-                      });
-                      _nextPage();
-                    },
-                    onBack: _previousPage,
-                  ),
-
-                  // Step 4: Gender
-                  GenderScreen(
-                    initialGender: _gender,
-                    onGenderSelected: (gender) {
-                      debugPrint('👤 Gender selected: $gender');
-                      setState(() {
-                        _gender = gender;
-                      });
-                      _nextPage();
-                    },
-                    onBack: _previousPage,
-                  ),
-
-                  // Step 5: Diet Type
-                  DietTypeScreen(
-                    initialDietType: _dietType,
-                    onDietTypeSelected: (dietType) {
-                      debugPrint('🥗 Diet type selected: $dietType');
-                      setState(() {
-                        _dietType = dietType;
-                      });
-                      _nextPage();
-                    },
-                    onBack: _previousPage,
-                  ),
-
-                  // Step 6: Fitness Goal
-                  FitnessGoalScreen(
-                    initialGoal: _fitnessGoal,
-                    isLoading: _isSaving,
-                    onGoalSelected: (goal) {
-                      debugPrint('🎯 Goal selected: $goal');
-                      setState(() {
-                        _fitnessGoal = goal;
-                      });
-                      _completeOnboarding();
-                    },
-                    onBack: _previousPage,
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+
+          // Pages
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              onPageChanged: (page) {
+                setState(() {
+                  _currentPage = page;
+                });
+                debugPrint('📄 Page changed to: $page');
+              },
+              children: [
+                // Step 1: Weight
+                WeightScreen(
+                  initialWeight: _weight,
+                  onWeightSelected: (weight) {
+                    debugPrint('⚖️ Weight selected: $weight kg');
+                    setState(() {
+                      _weight = weight;
+                    });
+                    _nextPage();
+                  },
+                  onBack: null,
+                ),
+
+                // Step 2: Height
+                HeightScreen(
+                  initialHeight: _height,
+                  onHeightSelected: (height) {
+                    debugPrint('📏 Height selected: $height cm');
+                    setState(() {
+                      _height = height;
+                    });
+                    _nextPage();
+                  },
+                  onBack: _previousPage,
+                ),
+
+                // Step 3: Age
+                AgeScreen(
+                  initialAge: _age,
+                  onAgeSelected: (age) {
+                    debugPrint('🎂 Age selected: $age');
+                    setState(() {
+                      _age = age;
+                    });
+                    _nextPage();
+                  },
+                  onBack: _previousPage,
+                ),
+
+                // Step 4: Gender
+                GenderScreen(
+                  initialGender: _gender,
+                  onGenderSelected: (gender) {
+                    debugPrint('👤 Gender selected: $gender');
+                    setState(() {
+                      _gender = gender;
+                    });
+                    _nextPage();
+                  },
+                  onBack: _previousPage,
+                ),
+
+                // Step 5: Diet Type
+                DietTypeScreen(
+                  initialDietType: _dietType,
+                  onDietTypeSelected: (dietType) {
+                    debugPrint('🥗 Diet type selected: $dietType');
+                    setState(() {
+                      _dietType = dietType;
+                    });
+                    _nextPage();
+                  },
+                  onBack: _previousPage,
+                ),
+
+                // Step 6: Fitness Goal
+                FitnessGoalScreen(
+                  initialGoal: _fitnessGoal,
+                  isLoading: _isSaving,
+                  onGoalSelected: (goal) {
+                    debugPrint('🎯 Goal selected: $goal');
+                    setState(() {
+                      _fitnessGoal = goal;
+                    });
+                    _completeOnboarding();
+                  },
+                  onBack: _previousPage,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,8 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Premium fitness goal screen - Dark emerald green with glassmorphism
+/// Fitness goal selection screen - White theme with primaryGreen accents
 class FitnessGoalScreen extends StatefulWidget {
   final String? initialGoal;
   final Function(String) onGoalSelected;
@@ -21,29 +20,20 @@ class FitnessGoalScreen extends StatefulWidget {
   State<FitnessGoalScreen> createState() => _FitnessGoalScreenState();
 }
 
-class _FitnessGoalScreenState extends State<FitnessGoalScreen>
-    with SingleTickerProviderStateMixin {
+class _FitnessGoalScreenState extends State<FitnessGoalScreen> {
   String? _selectedGoal;
-  late AnimationController _glowController;
 
   // Theme colors
-  static const Color accentGreen = Color(0xFF4ADE80);
-  static const Color accentGreenDark = Color(0xFF22C55E);
+  static const Color primaryGreen = Color(0xFF3D6B4A);
+  static const Color lightGreenBg = Color(0xFFEDF5F0);
+  static const Color textDark = Color(0xFF1F2937);
+  static const Color textGrey = Color(0xFF6B7280);
+  static const Color cardBorder = Color(0xFFE5E7EB);
 
   @override
   void initState() {
     super.initState();
     _selectedGoal = widget.initialGoal;
-    _glowController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _glowController.dispose();
-    super.dispose();
   }
 
   @override
@@ -55,38 +45,20 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen>
         children: [
           const SizedBox(height: 8),
 
-          // Hero icon with glassmorphic circle
+          // Hero icon circle
           Center(
-            child: AnimatedBuilder(
-              animation: _glowController,
-              builder: (context, child) {
-                return Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.08),
-                    border: Border.all(
-                      color: accentGreen.withOpacity(
-                        0.2 + _glowController.value * 0.2,
-                      ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accentGreen.withOpacity(
-                          0.15 + _glowController.value * 0.15,
-                        ),
-                        blurRadius: 24,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.emoji_events,
-                    size: 56,
-                    color: accentGreen,
-                  ),
-                );
-              },
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: lightGreenBg,
+                border: Border.all(color: primaryGreen.withOpacity(0.2)),
+              ),
+              child: const Icon(
+                Icons.flag_outlined,
+                size: 56,
+                color: primaryGreen,
+              ),
             ),
           ),
 
@@ -98,7 +70,7 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen>
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: textDark,
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
@@ -106,59 +78,41 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen>
 
           const SizedBox(height: 8),
 
-          Text(
-            "We'll create a personalized plan for you",
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.white.withOpacity(0.6),
-              height: 1.4,
-            ),
+          const Text(
+            "What do you want to achieve?",
+            style: TextStyle(fontSize: 15, color: textGrey, height: 1.4),
             textAlign: TextAlign.center,
           ),
 
           const SizedBox(height: 32),
 
           // Goal options
-          _buildGlassOption(
+          _buildOptionCard(
             icon: Icons.trending_down,
             title: 'Lose Weight',
-            subtitle: 'Reduce body fat & get leaner',
+            subtitle: 'Burn fat & get leaner',
             value: 'Lose Weight',
           ),
 
           const SizedBox(height: 12),
 
-          _buildGlassOption(
+          _buildOptionCard(
             icon: Icons.fitness_center,
             title: 'Build Muscle',
-            subtitle: 'Gain strength & muscle mass',
+            subtitle: 'Gain strength & mass',
             value: 'Build Muscle',
           ),
 
           const SizedBox(height: 12),
 
-          _buildGlassOption(
-            icon: Icons.balance,
+          _buildOptionCard(
+            icon: Icons.favorite_outline,
             title: 'Stay Fit',
-            subtitle: 'Maintain current fitness level',
+            subtitle: 'Maintain overall health',
             value: 'Stay Fit',
           ),
 
           const Spacer(),
-
-          // Motivational text
-          Center(
-            child: Text(
-              "You're almost there! 🎉",
-              style: TextStyle(
-                fontSize: 14,
-                color: accentGreen.withOpacity(0.7),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
 
           // Button Row
           Row(
@@ -173,12 +127,12 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen>
                 const SizedBox(width: 12),
               ],
               Expanded(
-                child: _buildGreenButton(
-                  label: 'Get Started',
-                  isLoading: widget.isLoading,
-                  onPressed: _selectedGoal != null && !widget.isLoading
+                child: _buildPrimaryButton(
+                  label: widget.isLoading ? 'Saving...' : 'Get Started',
+                  onPressed: (_selectedGoal != null && !widget.isLoading)
                       ? () => widget.onGoalSelected(_selectedGoal!)
                       : null,
+                  isLoading: widget.isLoading,
                 ),
               ),
             ],
@@ -188,7 +142,7 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen>
     );
   }
 
-  Widget _buildGlassOption({
+  Widget _buildOptionCard({
     required IconData icon,
     required String title,
     required String subtitle,
@@ -203,135 +157,86 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen>
           _selectedGoal = value;
         });
       },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? accentGreen.withOpacity(0.12)
-                  : Colors.white.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected
-                    ? accentGreen.withOpacity(0.6)
-                    : Colors.white.withOpacity(0.1),
-                width: isSelected ? 1.5 : 1,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: accentGreen.withOpacity(0.2),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? accentGreen.withOpacity(0.2)
-                        : Colors.white.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: isSelected
-                        ? accentGreen
-                        : Colors.white.withOpacity(0.6),
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? accentGreen
-                              : Colors.white.withOpacity(0.85),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withOpacity(0.45),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isSelected)
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [accentGreen, accentGreenDark],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: accentGreen.withOpacity(0.4),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-              ],
-            ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: isSelected ? primaryGreen.withOpacity(0.08) : lightGreenBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? primaryGreen.withOpacity(0.6) : cardBorder,
+            width: isSelected ? 1.5 : 1,
           ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? primaryGreen.withOpacity(0.15)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? primaryGreen : textGrey,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      color: isSelected ? primaryGreen : textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 13, color: textGrey),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: primaryGreen,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 16),
+              ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildGreenButton({
+  Widget _buildPrimaryButton({
     required String label,
     VoidCallback? onPressed,
     bool isLoading = false,
   }) {
     final isEnabled = onPressed != null;
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onPressed,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         height: 56,
         decoration: BoxDecoration(
-          gradient: isEnabled
-              ? const LinearGradient(colors: [accentGreen, accentGreenDark])
-              : null,
-          color: isEnabled ? null : Colors.white.withOpacity(0.08),
+          color: isEnabled ? primaryGreen : Colors.grey.shade300,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: isEnabled
-              ? [
-                  BoxShadow(
-                    color: accentGreen.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
         ),
         child: Center(
           child: isLoading
@@ -340,9 +245,7 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen>
                   height: 24,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Color(0xFF0D1F15),
-                    ),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
               : Text(
@@ -350,9 +253,7 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen>
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
-                    color: isEnabled
-                        ? const Color(0xFF0D1F15)
-                        : Colors.white.withOpacity(0.3),
+                    color: isEnabled ? Colors.white : textGrey,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -366,13 +267,14 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen>
     required VoidCallback onPressed,
   }) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onPressed,
       child: Container(
         height: 56,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
+          color: lightGreenBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: primaryGreen.withOpacity(0.3)),
         ),
         child: Center(
           child: Text(
@@ -380,7 +282,7 @@ class _FitnessGoalScreenState extends State<FitnessGoalScreen>
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withOpacity(0.8),
+              color: primaryGreen.withOpacity(0.8),
             ),
           ),
         ),

@@ -1,0 +1,302 @@
+# Fitness Geni — Complete App Overview & Context Report
+
+> Use this document to give ChatGPT (or any LLM) full context about the Fitness Geni app — its idea, architecture, UI design, features, and technology stack.
+
+---
+
+## 1. App Identity & Core Idea
+
+| Field | Value |
+|---|---|
+| **App Name** | Fitness Geni |
+| **Tagline** | *"Simple fitness & diet guidance"* |
+| **Bundle ID** | `com.a2cstudiosindia.fitness_geni` |
+| **Platform** | Flutter (iOS + Android) |
+| **Version** | 1.0.0+1 |
+
+**Concept**: Fitness Geni is an **AI-powered personal fitness and nutrition companion** that uses **Google Gemini AI** to generate personalized daily meal plans based on user profiles (weight, height, age, gender, diet type, fitness goal). It also integrates with Apple HealthKit / Google Health Connect to track physical activity (steps, calories burned, distance). The app sends **local meal reminder notifications** and provides a **comprehensive fitness dashboard** with charts and heatmaps.
+
+**Target Audience**: Health-conscious individuals looking for an easy, AI-driven way to get personalized daily meal plans and track fitness progress — without needing a personal trainer or nutritionist.
+
+---
+
+## 2. User Flow & Navigation Architecture
+
+```mermaid
+graph TD
+    A["App Launch"] --> B["Splash Screen"]
+    B --> C{"Auth Check"}
+    C -->|Not logged in| D["Login Screen"]
+    C -->|Logged in, not onboarded| F["Onboarding Flow"]
+    C -->|Logged in & onboarded| G["Main App"]
+    D -->|Sign up| E["Signup Screen"]
+    E --> F
+    D -->|Login| G
+    F --> G
+
+    G --> H["Home Tab"]
+    G --> I["Fit Tab"]
+    G --> J["Profile Tab"]
+
+    H -->|Create meals| K["Create Meals Screen"]
+    K -->|Generate| L["Meal Loading Screen"]
+    L --> M["Meals Preview Screen"]
+    M --> H
+```
+
+### Navigation Structure
+- **Router**: GoRouter with auth-aware redirects
+- **State Management**: Riverpod (flutter_riverpod)
+- **Bottom Navigation**: 3 tabs — **Home**, **Fit**, **Profile**
+
+---
+
+## 3. Feature-by-Feature Breakdown
+
+### 3.1 Authentication (`features/auth`)
+- **Login Screen**: Email + password sign-in via Supabase Auth
+- **Signup Screen**: Email + password registration
+- **Design**: Dark emerald green gradient background (`#3D6B4A` → `#2D5239`), hero logo image, golden-orange accent CTA button (`#F5A623`), white input fields with rounded corners
+- **Session**: Supabase session persistence with secure storage
+
+### 3.2 Onboarding (`features/onboarding`)
+A 6-step guided flow that collects user profile data:
+
+| Step | Screen | Input Type | Values |
+|------|--------|-----------|--------|
+| 1 | Gender | Selection cards | Male, Female, Other |
+| 2 | Age | Wheel picker | Numeric |
+| 3 | Weight | Wheel picker | kg |
+| 4 | Height | Wheel picker | cm |
+| 5 | Diet Type | Selection cards | Vegetarian, Non-Vegetarian |
+| 6 | Fitness Goal | Selection cards | Weight Loss, Bulking, Maintain |
+
+- **Design**: Dark emerald green theme, step-by-step PageView with progress indicator
+- **Data Storage**: Saves user profile to Supabase `profiles` table
+- **Logic**: Calculates BMI (`weight / (height/100)²`), daily nutrition targets (calories, protein, carbs, fats) using the `NutritionCalculator` utility
+
+### 3.3 Home Screen / Meal Planning (`features/home`)
+**The core feature of the app.** Displays today's AI-generated meal plan.
+
+#### Home Screen
+- **Greeting**: Time-aware greeting (Good Morning/Afternoon/Evening)
+- **Nutrition Statistics Card**: Shows daily consumed vs. target for calories, protein, carbs, fats
+- **Meal Cards**: 3 daily meals (Morning, Afternoon, Night) displayed chronologically
+  - Each card shows: meal name, time slot, ingredients, calorie count
+  - **Tap** → opens `MealDetailSheet` (bottom sheet with full recipe + ingredients)
+  - **Checkbox** → marks meal as done/undone, updates daily nutrition tracking in Supabase
+- **Empty State**: Illustrated CTA to create meals when no meals exist for today
+
+#### Create Meals Screen
+Two AI generation modes:
+1. **Ingredient-based**: User adds ingredients they have at home (min 5), and Gemini AI creates meals from them
+2. **Surprise Me**: Gemini AI generates a balanced meal plan automatically based on user profile
+
+#### Meal Generation Flow
+1. User selects mode → adds ingredients (if applicable) → taps "Generate Meals"
+2. **Meal Loading Screen**: Animated loading state with Lottie animation
+3. **Gemini AI Service**: Sends a detailed prompt to Google Gemini API including:
+   - User profile (age, weight, height, goal, diet type)
+   - Calculated daily nutrition targets (calorie split: 30/40/30 for breakfast/lunch/dinner)
+   - Ingredient constraints (if provided)
+   - Requirements: budget-friendly, quick (~20min), Indian/simple cuisine
+4. **Meals Preview Screen**: User reviews 3 generated meals before saving
+5. **Save**: Meals persist to Supabase with normalized schema (`meals`, `daily_plans`, `daily_plan_meals`)
+
+#### Meal Data Model
+Each meal contains:
+- `name`, `time` (breakfast/lunch/dinner), `ingredients[]`, `recipeSteps[]`
+- `calories`, `protein`, `carbs`, `fats` (AI-generated nutrition info)
+- `isDone` (completion status), `userId`, [date](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/features/auth/presentation/screens/login_screen.dart#34-44)
+
+### 3.4 Fitness / Statistics Screen (`features/fit`)
+A wellness dashboard tracking physical activity and nutrition progress.
+
+| Widget | Description |
+|--------|-------------|
+| **Protein Progress Card** | Circular progress showing consumed vs. target protein |
+| **Activity Stats Card** | Steps, calories burned, distance (km) from HealthKit/Health Connect |
+| **Health Permission Banner** | Conditional banner to connect to Apple Health / Health Connect |
+| **Weekly Activity Chart** | Bar chart (fl_chart) showing 7-day step history |
+| **Perfect Days Heatmap** | Calendar-style heatmap showing days where all meals were completed |
+
+- **Data Source**: `health` package for HealthKit (iOS) / Health Connect (Android)
+- **Permissions**: STEPS, TOTAL_CALORIES_BURNED, DISTANCE_DELTA (Android) / DISTANCE_WALKING_RUNNING (iOS)
+- Pull-to-refresh support
+
+### 3.5 Profile Screen (`features/profile`)
+Premium profile page showing user identity, stats, and settings.
+
+| Section | Content |
+|---------|---------|
+| **User Card** | Name, email, info pills (gender, age, diet type) |
+| **BMI Card** | Visual BMI display with color-coded category (Underweight/Normal/Overweight/Obese) |
+| **Nutrition Section** | Daily targets: Calories, Protein, Carbs, Fats with icons |
+| **Goal Card** | Current fitness goal display |
+| **Settings Section** | Notifications toggle, Logout button with confirmation dialog |
+
+### 3.6 Splash Screen (`features/splash`)
+- Animated logo / branding screen shown on cold start
+- Performs auth state check and routes to appropriate screen
+
+---
+
+## 4. Backend & Services Architecture
+
+### 4.1 Supabase (BaaS)
+- **Auth**: Email/password authentication with session persistence
+- **Database**: PostgreSQL with the following schema:
+
+| Table | Purpose |
+|-------|---------|
+| `profiles` | User profile data (weight, height, age, gender, diet_type, goal, daily nutrition targets) |
+| `meals` | Meal catalog (name, meal_time, ingredients, recipe_steps, nutrition) |
+| `daily_plans` | Per-user daily plan with consumed nutrition tracking |
+| `daily_plan_meals` | Junction table linking daily plans to meals, tracks completion status |
+
+- **RPC Functions**: `increment_daily_nutrition`, `decrement_daily_nutrition` — atomic nutrition tracking when meals are marked done/undone
+- **Environment**: Supabase URL + anon key stored in [.env](file:///Users/adityamagar/Fitness-Geni/fitness_geni/.env)
+
+### 4.2 Google Gemini AI Service
+- **Package**: `google_generative_ai`
+- **Model**: Configured via `GeminiConfig.model`
+- **Max Output Tokens**: 8192
+- **Prompt Engineering**: Structured prompt with JSON output format, calorie distribution (30/40/30), max 5 ingredients per meal, max 3 recipe steps
+- **Error Handling**: Robust JSON parsing with truncated JSON auto-repair
+
+### 4.3 Meal Notification Service
+- **Package**: `flutter_local_notifications` + `timezone`
+- **Features**:
+  - Scheduled meal reminders for morning, afternoon, and evening
+  - Fallback duplication protection (notification ID overwrite)
+  - Safe boot handling (relies on Android's scheduled notification restoration)
+  - Tap navigation to Home screen
+  - Permission checking before scheduling
+
+### 4.4 Health / Fitness Service
+- **Package**: `health` (v12)
+- **Platforms**: Apple HealthKit (iOS) + Health Connect (Android)
+- **Data**: Steps, calories burned, distance
+- **Permissions**: Requested via `permission_handler`
+
+---
+
+## 5. Design System & Theme
+
+### 5.1 Color Palette
+
+| Role | Color | Hex |
+|------|-------|-----|
+| **Primary** | Vibrant Cyan | `#06B6D4` |
+| **Primary Light** | Light Cyan | `#22D3EE` |
+| **Primary Dark** | Deep Cyan | `#0891B2` |
+| **Accent** | Purple | `#8B5CF6` |
+| **Background** | Off-white | `#FAFAFA` |
+| **Surface** | White | `#FFFFFF` |
+| **Text Primary** | Dark grey | `#1F2937` |
+| **Text Secondary** | Medium grey | `#6B7280` |
+| **Success** | Green | `#10B981` |
+| **Error** | Red | `#EF4444` |
+| **Warning** | Amber | `#F59E0B` |
+
+> **Auth screens** use a separate dark emerald green palette: Primary `#3D6B4A`, Dark `#2D5239`, CTA Orange `#F5A623`
+
+### 5.2 Typography
+- **Font**: Google Fonts (system configured via `google_fonts` package)
+- **Styles**: `headline1-3`, `bodyLarge/Medium/Small`, `button`, `label`, `caption`
+
+### 5.3 Component Theme
+- **Material Design 3** enabled
+- Rounded corners throughout (12–16px border radius)
+- Elevated buttons with primary-colored shadows
+- Input fields: filled white with subtle borders, 12px radius
+- Cards: white surface, subtle shadow (`0.1` opacity), 16px radius
+- Bottom nav: fixed type, primary highlight
+
+### 5.4 Design Philosophy
+- **Clean, calm, minimal** — the app uses lots of whitespace and soft colors
+- **Premium feel** — gradient backgrounds on auth screens, glassmorphism-inspired cards
+- **Fitness-centric** — progress bars, circular indicators, heatmaps, charts
+- **Light theme only** (MVP v1 — no dark mode yet)
+
+---
+
+## 6. Technology Stack Summary
+
+| Category | Technology |
+|----------|-----------|
+| **Framework** | Flutter (Dart SDK ^3.10.7) |
+| **State Management** | Riverpod (flutter_riverpod ^2.6.1) |
+| **Routing** | GoRouter (^14.6.2) with auth-aware redirects |
+| **Backend** | Supabase (supabase_flutter ^2.0.0) |
+| **AI** | Google Gemini (google_generative_ai ^0.4.6) |
+| **Health Data** | health ^12.0.0, permission_handler ^12.0.1 |
+| **Charts** | fl_chart ^0.69.2 |
+| **Animations** | Lottie (^3.1.0) |
+| **Notifications** | flutter_local_notifications ^20.1.0 |
+| **Storage** | SharedPreferences, Flutter Secure Storage |
+| **Typography** | Google Fonts (^6.2.1) |
+| **UI Components** | wheel_picker, introduction_screen, percent_indicator |
+| **Code Gen** | freezed, json_serializable, build_runner |
+| **Environment** | flutter_dotenv (^5.1.0) |
+
+---
+
+## 7. Project Architecture
+
+```
+lib/
+├── main.dart                          # App entry point + GoRouter setup
+├── core/
+│   ├── auth/                          # Auth state, providers, profile adapter
+│   ├── config/                        # Gemini API config
+│   ├── constants/                     # App-wide constants (routes, strings)
+│   ├── router/                        # Auth redirect logic
+│   ├── services/
+│   │   ├── gemini_service.dart        # Gemini AI meal generation
+│   │   ├── meal_service.dart          # Supabase CRUD for meals
+│   │   ├── meal_notification_service.dart  # Local notifications
+│   │   ├── fitness_service.dart       # Fitness data abstraction
+│   │   └── health_fitness_service.dart # HealthKit/Health Connect integration
+│   ├── supabase/                      # Supabase client + base service
+│   ├── theme/                         # Colors, text styles, theme data
+│   ├── utils/                         # Nutrition calculator
+│   └── widgets/                       # Reusable widgets (buttons, cards)
+├── features/
+│   ├── auth/                          # Login + Signup screens
+│   ├── onboarding/                    # 6-step profile setup
+│   ├── home/                          # Meal plan (core feature)
+│   │   ├── domain/models/             # Meal data model
+│   │   └── presentation/
+│   │       ├── screens/               # Home, CreateMeals, MealLoading, MealsPreview
+│   │       ├── providers/             # Meal + MealCreation Riverpod providers
+│   │       └── widgets/               # MealCard, MealDetailSheet, NutritionCard, etc.
+│   ├── fit/                           # Fitness dashboard
+│   │   └── presentation/
+│   │       ├── screens/               # FitScreen
+│   │       ├── providers/             # Fitness + PerfectDays providers
+│   │       └── widgets/               # Charts, heatmap, stats cards
+│   ├── profile/                       # User profile & settings
+│   └── splash/                        # Splash screen
+└── shared/
+    └── presentation/
+        └── main_navigation.dart       # Bottom nav bar wrapper
+```
+
+---
+
+## 8. Key Differentiators
+
+1. **AI-Powered Meal Planning** — Not just a calorie tracker; Gemini AI generates actual recipes with ingredients and steps personalized to the user's profile
+2. **Two Generation Modes** — "Use what I have" (ingredient-based) or "Surprise me" for flexibility
+3. **Nutrition-Aware AI** — AI output matches calculated daily macro targets (protein, carbs, fats, calories)
+4. **Integrated Health Data** — Steps, calories burned, distance from Apple Health / Google Health Connect
+5. **Perfect Days Heatmap** — Gamification element tracking days where all meals were completed
+6. **Local Notifications** — Smart meal reminders without a backend push service
+7. **Budget-Friendly Focus** — AI generates meals that are quick (~20 min), simple, and budget-friendly with Indian/simple cuisine focus
+
+---
+
+## 9. Summary for LLM Context
+
+> **Fitness Geni** is a **Flutter mobile app** (iOS + Android) that acts as an AI-powered fitness and nutrition assistant. It uses **Supabase** for auth/database, **Google Gemini AI** to generate personalized daily meal plans (3 meals: breakfast, lunch, dinner) based on user profiles collected during onboarding (weight, height, age, gender, diet type, fitness goal). The app calculates daily macro targets and asks AI to create meals matching those targets. Users can generate meals from ingredients they have at home or get surprise balanced meals. The app tracks meal completion, updates daily nutrition consumed, integrates with **Apple HealthKit/Google Health Connect** for step/calorie/distance tracking, and provides a fitness dashboard with charts and a "Perfect Days" heatmap. The UI is **clean, minimal, and premium** with a light cyan primary color (`#06B6D4`), purple accent, and dark emerald green auth screens. Built with **Riverpod** state management, **GoRouter** navigation, and follows a feature-first architecture.
