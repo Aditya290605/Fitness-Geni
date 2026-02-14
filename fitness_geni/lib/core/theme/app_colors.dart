@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._(); // Private constructor to prevent instantiation
 
-  // Primary Colors - Vibrant teal/cyan
-  static const Color primary = Color(0xFF06B6D4); // Cyan
-  static const Color primaryLight = Color(0xFF22D3EE);
-  static const Color primaryDark = Color(0xFF0891B2);
+  // Primary Colors - Forest Green
+  static const Color primary = Color(0xFF3D6B4A);
+  static const Color primaryLight = Color(0xFF4E8A5E);
+  static const Color primaryDark = Color(0xFF2D5038);
 
   // Accent Colors
   static const Color accent = Color(0xFF8B5CF6); // Purple

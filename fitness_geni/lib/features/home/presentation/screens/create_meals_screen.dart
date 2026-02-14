@@ -38,8 +38,8 @@ class _CreateMealsScreenState extends ConsumerState<CreateMealsScreen> {
 
     // Validation for ingredients mode
     if (state.selectedMode == MealGenerationMode.ingredients &&
-        state.ingredients.length < 5) {
-      _showWarning('Please add at least 5 ingredients to generate meals');
+        state.ingredients.length < 2) {
+      _showWarning('Please add at least 2 ingredients to generate meals');
       return;
     }
 
@@ -174,12 +174,12 @@ class _CreateMealsScreenState extends ConsumerState<CreateMealsScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Text(
-                        '${state.ingredients.length}/5 ingredients added (minimum)',
+                        '${state.ingredients.length}/2 ingredients added (minimum)',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: state.ingredients.length >= 5
+                          color: state.ingredients.length >= 2
                               ? AppColors.primary
                               : AppColors.textSecondary,
-                          fontWeight: state.ingredients.length >= 5
+                          fontWeight: state.ingredients.length >= 2
                               ? FontWeight.w600
                               : FontWeight.normal,
                         ),

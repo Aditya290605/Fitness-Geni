@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/user_profile.dart';
 
 /// Premium Daily Needs Card with glassmorphism

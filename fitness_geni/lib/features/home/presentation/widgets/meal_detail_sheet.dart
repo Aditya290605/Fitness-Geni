@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/meal.dart';
 
-/// Bottom sheet showing meal details with premium design
+/// Full-screen meal detail page with premium layout
 class MealDetailSheet extends StatelessWidget {
   final Meal meal;
   final VoidCallback? onMarkDone;
@@ -13,266 +13,339 @@ class MealDetailSheet extends StatelessWidget {
     required Meal meal,
     VoidCallback? onMarkDone,
   }) {
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => MealDetailSheet(meal: meal, onMarkDone: onMarkDone),
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MealDetailSheet(meal: meal, onMarkDone: onMarkDone),
+      ),
     );
   }
 
   String _getMealImage() {
     final time = meal.time.toLowerCase();
-    if (time.contains('breakfast')) {
+    if (time.contains('breakfast') || time.contains('morning')) {
       return 'assets/images/breakfast.png';
-    } else if (time.contains('lunch')) {
+    } else if (time.contains('lunch') || time.contains('afternoon')) {
       return 'assets/images/lunch.png';
-    } else if (time.contains('dinner')) {
+    } else if (time.contains('dinner') || time.contains('night')) {
       return 'assets/images/dinner.png';
     }
     return 'assets/images/breakfast.png';
   }
 
+  String _getMealDescription() {
+    final cal = meal.calories ?? 0;
+    final p = meal.protein?.toStringAsFixed(0) ?? '0';
+    final c = meal.carbs?.toStringAsFixed(0) ?? '0';
+    final f = meal.fats?.toStringAsFixed(0) ?? '0';
+    return 'A wholesome ${meal.time.toLowerCase()} meal with $cal kcal, '
+        'packed with ${p}g protein, ${c}g carbs, and ${f}g fats. '
+        'Made with ${meal.ingredients.length} fresh ingredients to fuel your day.';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 8),
-              child: Center(
-                child: Container(
-                  width: 48,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2.5),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final topPadding = MediaQuery.of(context).padding.top;
+    final imageSize = screenWidth * 0.65;
+    // Green area height
+    const greenHeight = 260.0;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          // ── Header: green bg + large dish image ──
+          SizedBox(
+            height: greenHeight,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Green background - full width, rounded bottom-left
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Color.fromARGB(255, 1, 68, 20),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(35),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
 
-            // Scrollable content
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header with meal image
-                    Row(
-                      children: [
-                        // Meal image
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Image.asset(
-                              _getMealImage(),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
+                // Back button
+                Positioned(
+                  top: topPadding + 8,
+                  left: 16,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ),
 
-                        // Meal info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                meal.time,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey.shade600,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                meal.name,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                  height: 1.2,
-                                ),
-                              ),
-                            ],
-                          ),
+                // Meal time label
+                Positioned(
+                  top: topPadding + 60,
+                  left: 24,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      meal.time.toLowerCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Dish image - large, half-clipped on the right edge
+                // Extends below the green area
+                Positioned(
+                 
+                  right: -(imageSize * 0.38),
+                  top: topPadding + 5,
+                  child: Container(
+                    width: imageSize,
+                    height: imageSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.18),
+                          blurRadius: 30,
+
+                          offset: const Offset(-5, 10),
                         ),
                       ],
                     ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        
+                        _getMealImage(), fit: BoxFit.cover),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 50,),
 
-                    const SizedBox(height: 32),
+          // ── Scrollable content below header ──
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Meal name - below the green header, never overlaps
+                  Text(
+                    meal.name,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      height: 1.25,
+                    ),
+                  ),
 
-                    // Ingredients section
-                    _buildSectionHeader('Ingredients'),
-                    const SizedBox(height: 16),
-                    ...meal.ingredients.map(
-                      (ingredient) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Colors.grey.shade200,
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Colors.black87,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  ingredient,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    color: Colors.black87,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                  const SizedBox(height: 20),
+                  // ── Description ──
+                  const Text(
+                    'Description',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    _getMealDescription(),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                      height: 1.6,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ── Nutrition info row ──
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: Colors.grey.shade200),
+                        bottom: BorderSide(color: Colors.grey.shade200),
                       ),
                     ),
-
-                    const SizedBox(height: 32),
-
-                    // Recipe section
-                    _buildSectionHeader('Recipe'),
-                    const SizedBox(height: 16),
-                    ...meal.recipeSteps.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final step = entry.value;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.grey.shade200,
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.02),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Step number with gradient
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF000000),
-                                      Color(0xFF333333),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.2),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    step,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.black87,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                    child: Row(
+                      children: [
+                        _buildNutritionItem(
+                          'Calories',
+                          '${meal.calories ?? 0}',
                         ),
-                      );
-                    }),
+                        _buildNutritionItem(
+                          'Protein',
+                          '${meal.protein?.toStringAsFixed(0) ?? '0'}g',
+                        ),
+                        _buildNutritionItem(
+                          'Carbs',
+                          '${meal.carbs?.toStringAsFixed(0) ?? '0'}g',
+                        ),
+                        _buildNutritionItem(
+                          'Fats',
+                          '${meal.fats?.toStringAsFixed(0) ?? '0'}g',
+                        ),
+                      ],
+                    ),
+                  ),
 
-                    const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
-                    // Mark as done button - only show if onMarkDone is provided and meal isn't done
-                    if (onMarkDone != null && !meal.isDone)
-                      ElevatedButton(
+                  // ── Ingredients ──
+                  const Text(
+                    'Ingredients',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ...meal.ingredients.map(
+                    (ingredient) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            margin: const EdgeInsets.only(top: 7),
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              ingredient,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Colors.grey.shade700,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // ── Steps ──
+                  const Text(
+                    'Steps',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ...meal.recipeSteps.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final step = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: const BoxDecoration(
+                              color: Colors.black,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${index + 1}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 3),
+                              child: Text(
+                                step,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.grey.shade700,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+
+                  const SizedBox(height: 24),
+
+                  // ── Action button ──
+                  if (onMarkDone != null && !meal.isDone)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
                         onPressed: () {
-                          onMarkDone!(); // Safe because we check for null above
+                          onMarkDone!();
                           Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
+                          backgroundColor: const Color(0xFF3D6B4A),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(30),
                           ),
                         ),
                         child: const Text(
@@ -283,71 +356,73 @@ class MealDetailSheet extends StatelessWidget {
                             letterSpacing: 0.3,
                           ),
                         ),
-                      )
-                    else if (meal.isDone)
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: Colors.green.shade200,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.green.shade700,
-                              size: 22,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Completed',
-                              style: TextStyle(
-                                color: Colors.green.shade700,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 17,
-                              ),
-                            ),
-                          ],
+                      ),
+                    )
+                  else if (meal.isDone)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEDF5F0),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: const Color(0xFF3D6B4A).withOpacity(0.3),
                         ),
                       ),
-                  ],
-                ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: Color(0xFF3D6B4A),
+                            size: 22,
+                          ),
+                          SizedBox(width: 10),
+                          Text(
+                            'Completed',
+                            style: TextStyle(
+                              color: Color(0xFF3D6B4A),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 17,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 20),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-            letterSpacing: 0.2,
+  Widget _buildNutritionItem(String label, String value) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w400,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 3,
-          width: 40,
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(1.5),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

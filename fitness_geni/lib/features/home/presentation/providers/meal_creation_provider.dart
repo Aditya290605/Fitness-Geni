@@ -25,7 +25,7 @@ class MealCreationState {
   bool get canGenerate {
     if (selectedMode == null) return false;
     if (selectedMode == MealGenerationMode.ingredients) {
-      return ingredients.length >= 5; // Require at least 5 ingredients
+      return ingredients.length >= 2; // Require at least 2 ingredients
     }
     return true; // Surprise mode always ready
   }
