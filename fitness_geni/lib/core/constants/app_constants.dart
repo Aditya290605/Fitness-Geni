@@ -12,6 +12,7 @@ class AppConstants {
 
   // Navigation Routes (used by GoRouter)
   static const String routeSplash = '/splash';
+  static const String routeGetStarted = '/get-started';
   static const String routeLogin = '/login';
   static const String routeSignup = '/signup';
   static const String routeOnboarding = '/onboarding';

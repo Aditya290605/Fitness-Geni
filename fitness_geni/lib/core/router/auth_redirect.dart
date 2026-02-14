@@ -23,6 +23,8 @@ String? authRedirect(BuildContext context, GoRouterState state, Ref ref) {
 
   // Determine what route user is trying to access
   final isGoingToSplash = state.matchedLocation == AppConstants.routeSplash;
+  final isGoingToGetStarted =
+      state.matchedLocation == AppConstants.routeGetStarted;
   final isGoingToLogin = state.matchedLocation == AppConstants.routeLogin;
   final isGoingToSignup = state.matchedLocation == AppConstants.routeSignup;
   final isGoingToOnboarding =
@@ -39,16 +41,19 @@ String? authRedirect(BuildContext context, GoRouterState state, Ref ref) {
   // ========================================
   if (!isAuthenticated) {
     debugPrint('🔍 AUTH REDIRECT - User is NOT authenticated');
-    // Allow access to login, signup, AND onboarding screens
+    // Allow access to get-started, login, signup, AND onboarding screens
     // Onboarding is allowed because during signup, there's a brief moment
     // where the user is created but the auth stream hasn't updated yet
-    if (isGoingToLogin || isGoingToSignup || isGoingToOnboarding) {
+    if (isGoingToGetStarted ||
+        isGoingToLogin ||
+        isGoingToSignup ||
+        isGoingToOnboarding) {
       return null; // No redirect needed
     }
 
-    // Redirect to login for any other route
-    debugPrint('🔍 AUTH REDIRECT - Redirecting to login');
-    return AppConstants.routeLogin;
+    // Redirect to get-started for any other route
+    debugPrint('🔍 AUTH REDIRECT - Redirecting to get-started');
+    return AppConstants.routeGetStarted;
   }
 
   // ========================================

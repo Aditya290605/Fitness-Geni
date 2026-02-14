@@ -7,6 +7,7 @@ import 'core/supabase/supabase_client.dart';
 import 'core/router/auth_redirect.dart';
 import 'core/services/meal_notification_service.dart';
 import 'features/splash/presentation/screens/splash_screen.dart';
+import 'features/get_started/presentation/screens/get_started_screen.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/signup_screen.dart';
 import 'features/onboarding/presentation/screens/onboarding_screen.dart';
@@ -79,6 +80,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppConstants.routeSplash,
         builder: (context, state) => const SplashScreen(),
+      ),
+
+      // Get Started Screen
+      GoRoute(
+        path: AppConstants.routeGetStarted,
+        builder: (context, state) => const GetStartedScreen(),
       ),
 
       // Login Screen

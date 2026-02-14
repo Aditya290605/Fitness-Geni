@@ -1,8 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Premium diet preference screen - Dark emerald green with glassmorphism
+/// Diet preference screen - White theme with primaryGreen accents
 class DietTypeScreen extends StatefulWidget {
   final String? initialDietType;
   final Function(String) onDietTypeSelected;
@@ -19,29 +18,20 @@ class DietTypeScreen extends StatefulWidget {
   State<DietTypeScreen> createState() => _DietTypeScreenState();
 }
 
-class _DietTypeScreenState extends State<DietTypeScreen>
-    with SingleTickerProviderStateMixin {
+class _DietTypeScreenState extends State<DietTypeScreen> {
   String? _selectedDiet;
-  late AnimationController _glowController;
 
   // Theme colors
-  static const Color accentGreen = Color(0xFF4ADE80);
-  static const Color accentGreenDark = Color(0xFF22C55E);
+  static const Color primaryGreen = Color(0xFF3D6B4A);
+  static const Color lightGreenBg = Color(0xFFEDF5F0);
+  static const Color textDark = Color(0xFF1F2937);
+  static const Color textGrey = Color(0xFF6B7280);
+  static const Color cardBorder = Color(0xFFE5E7EB);
 
   @override
   void initState() {
     super.initState();
     _selectedDiet = widget.initialDietType;
-    _glowController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _glowController.dispose();
-    super.dispose();
   }
 
   @override
@@ -53,38 +43,20 @@ class _DietTypeScreenState extends State<DietTypeScreen>
         children: [
           const SizedBox(height: 8),
 
-          // Hero image with glassmorphic circle
+          // Hero icon circle
           Center(
-            child: AnimatedBuilder(
-              animation: _glowController,
-              builder: (context, child) {
-                return Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.08),
-                    border: Border.all(
-                      color: accentGreen.withOpacity(
-                        0.2 + _glowController.value * 0.2,
-                      ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accentGreen.withOpacity(
-                          0.15 + _glowController.value * 0.15,
-                        ),
-                        blurRadius: 24,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Image.asset(
-                    'assets/images/meal.png',
-                    width: 56,
-                    height: 56,
-                  ),
-                );
-              },
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: lightGreenBg,
+                border: Border.all(color: primaryGreen.withOpacity(0.2)),
+              ),
+              child: Image.asset(
+                'assets/images/meal.png',
+                width: 56,
+                height: 56,
+              ),
             ),
           ),
 
@@ -96,7 +68,7 @@ class _DietTypeScreenState extends State<DietTypeScreen>
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: textDark,
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
@@ -104,20 +76,16 @@ class _DietTypeScreenState extends State<DietTypeScreen>
 
           const SizedBox(height: 8),
 
-          Text(
+          const Text(
             "We'll recommend meals based on your choice",
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.white.withOpacity(0.6),
-              height: 1.4,
-            ),
+            style: TextStyle(fontSize: 15, color: textGrey, height: 1.4),
             textAlign: TextAlign.center,
           ),
 
           const SizedBox(height: 32),
 
           // Diet options
-          _buildGlassOption(
+          _buildOptionCard(
             icon: Icons.eco,
             title: 'Vegetarian',
             subtitle: 'Plant-based with dairy & eggs',
@@ -126,7 +94,7 @@ class _DietTypeScreenState extends State<DietTypeScreen>
 
           const SizedBox(height: 12),
 
-          _buildGlassOption(
+          _buildOptionCard(
             icon: Icons.restaurant,
             title: 'Non-Vegetarian',
             subtitle: 'Includes meat & fish',
@@ -135,7 +103,7 @@ class _DietTypeScreenState extends State<DietTypeScreen>
 
           const SizedBox(height: 12),
 
-          _buildGlassOption(
+          _buildOptionCard(
             icon: Icons.spa,
             title: 'Vegan',
             subtitle: 'Purely plant-based',
@@ -157,7 +125,7 @@ class _DietTypeScreenState extends State<DietTypeScreen>
                 const SizedBox(width: 12),
               ],
               Expanded(
-                child: _buildGreenButton(
+                child: _buildPrimaryButton(
                   label: 'Continue',
                   onPressed: _selectedDiet != null
                       ? () => widget.onDietTypeSelected(_selectedDiet!)
@@ -171,7 +139,7 @@ class _DietTypeScreenState extends State<DietTypeScreen>
     );
   }
 
-  Widget _buildGlassOption({
+  Widget _buildOptionCard({
     required IconData icon,
     required String title,
     required String subtitle,
@@ -186,110 +154,72 @@ class _DietTypeScreenState extends State<DietTypeScreen>
           _selectedDiet = value;
         });
       },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? accentGreen.withOpacity(0.12)
-                  : Colors.white.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected
-                    ? accentGreen.withOpacity(0.6)
-                    : Colors.white.withOpacity(0.1),
-                width: isSelected ? 1.5 : 1,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: accentGreen.withOpacity(0.2),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? accentGreen.withOpacity(0.2)
-                        : Colors.white.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: isSelected
-                        ? accentGreen
-                        : Colors.white.withOpacity(0.6),
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? accentGreen
-                              : Colors.white.withOpacity(0.85),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withOpacity(0.45),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isSelected)
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [accentGreen, accentGreenDark],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: accentGreen.withOpacity(0.4),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-              ],
-            ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: isSelected ? primaryGreen.withOpacity(0.08) : lightGreenBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? primaryGreen.withOpacity(0.6) : cardBorder,
+            width: isSelected ? 1.5 : 1,
           ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? primaryGreen.withOpacity(0.15)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? primaryGreen : textGrey,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      color: isSelected ? primaryGreen : textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 13, color: textGrey),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: primaryGreen,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 16),
+              ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildGreenButton({required String label, VoidCallback? onPressed}) {
+  Widget _buildPrimaryButton({required String label, VoidCallback? onPressed}) {
     final isEnabled = onPressed != null;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -298,20 +228,8 @@ class _DietTypeScreenState extends State<DietTypeScreen>
         duration: const Duration(milliseconds: 200),
         height: 56,
         decoration: BoxDecoration(
-          gradient: isEnabled
-              ? const LinearGradient(colors: [accentGreen, accentGreenDark])
-              : null,
-          color: isEnabled ? null : Colors.white.withOpacity(0.08),
+          color: isEnabled ? primaryGreen : Colors.grey.shade300,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: isEnabled
-              ? [
-                  BoxShadow(
-                    color: accentGreen.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
         ),
         child: Center(
           child: Text(
@@ -319,9 +237,7 @@ class _DietTypeScreenState extends State<DietTypeScreen>
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: isEnabled
-                  ? const Color(0xFF0D1F15)
-                  : Colors.white.withOpacity(0.3),
+              color: isEnabled ? Colors.white : textGrey,
               letterSpacing: 0.5,
             ),
           ),
@@ -340,9 +256,9 @@ class _DietTypeScreenState extends State<DietTypeScreen>
       child: Container(
         height: 56,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
+          color: lightGreenBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: primaryGreen.withOpacity(0.3)),
         ),
         child: Center(
           child: Text(
@@ -350,7 +266,7 @@ class _DietTypeScreenState extends State<DietTypeScreen>
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withOpacity(0.8),
+              color: primaryGreen.withOpacity(0.8),
             ),
           ),
         ),
