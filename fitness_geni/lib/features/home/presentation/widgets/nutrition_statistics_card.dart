@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
-import '../../../../core/theme/app_colors.dart';
+
 
 /// Premium statistics card showing nutrition progress with circular and linear indicators
 class NutritionStatisticsCard extends StatelessWidget {
@@ -55,8 +55,8 @@ class NutritionStatisticsCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.primary,
-              AppColors.primary.withValues(alpha: 0.85),
+              const Color.fromARGB(255, 0, 0, 0),
+              const Color.fromARGB(255, 2, 102, 0).withValues(alpha: 0.85),
             ],
           ),
           borderRadius: BorderRadius.circular(20),
