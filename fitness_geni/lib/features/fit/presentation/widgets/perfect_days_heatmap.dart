@@ -4,7 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 /// Custom heatmap calendar showing "perfect days"
 /// Green = all meals logged + protein goal achieved
 /// Grey = incomplete day
-/// Replaces flutter_heatmap_calendar due to Flutter compatibility issues
+/// Refined design with larger cells, softer greens, and polished legend
 class PerfectDaysHeatmap extends StatelessWidget {
   final Map<DateTime, bool> perfectDays;
   final bool isLoading;
@@ -14,6 +14,9 @@ class PerfectDaysHeatmap extends StatelessWidget {
     required this.perfectDays,
     this.isLoading = false,
   });
+
+  static const Color _perfectGreen = Color(0xFF10B981);
+  static const Color _perfectGreenLight = Color(0xFFD1FAE5);
 
   @override
   Widget build(BuildContext context) {
@@ -26,11 +29,11 @@ class PerfectDaysHeatmap extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 16,
+            blurRadius: 20,
             offset: const Offset(0, 4),
           ),
         ],
@@ -38,26 +41,27 @@ class PerfectDaysHeatmap extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Month header
-          Text(
-            _getMonthName(now.month),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Legend
+          // Month header + legend row
           Row(
             children: [
-              _LegendItem(color: AppColors.success, label: 'Perfect Day'),
-              const SizedBox(width: 16),
-              _LegendItem(color: AppColors.border, label: 'Incomplete'),
+              Text(
+                _getMonthName(now.month),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              _LegendItem(color: _perfectGreen, label: 'Perfect'),
+              const SizedBox(width: 12),
+              _LegendItem(
+                color: AppColors.border.withValues(alpha: 0.5),
+                label: 'Incomplete',
+              ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
           // Weekday headers
           Row(
@@ -65,13 +69,13 @@ class PerfectDaysHeatmap extends StatelessWidget {
             children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
                 .map(
                   (day) => SizedBox(
-                    width: 32,
+                    width: 36,
                     child: Center(
                       child: Text(
                         day,
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                           color: AppColors.textTertiary,
                         ),
                       ),
@@ -95,21 +99,33 @@ class PerfectDaysHeatmap extends StatelessWidget {
 
           // Perfect days count
           Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.star_rounded, size: 18, color: AppColors.success),
-                const SizedBox(width: 6),
-                Text(
-                  '${_countPerfectDays(now)} perfect days this month',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+            padding: const EdgeInsets.only(top: 18),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: _perfectGreenLight.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.star_rounded,
+                    size: 18,
+                    color: _perfectGreen,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 6),
+                  Text(
+                    '${_countPerfectDays(now)} perfect day${_countPerfectDays(now) == 1 ? '' : 's'} this month',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF059669),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -122,8 +138,7 @@ class PerfectDaysHeatmap extends StatelessWidget {
     int daysInMonth,
     int firstDayWeekday,
   ) {
-    // Monday = 1, Sunday = 7
-    final offset = firstDayWeekday - 1; // 0 for Monday, 6 for Sunday
+    final offset = firstDayWeekday - 1;
     final totalCells = offset + daysInMonth;
     final weeks = (totalCells / 7).ceil();
 
@@ -138,7 +153,7 @@ class PerfectDaysHeatmap extends StatelessWidget {
               final dayNumber = cellIndex - offset + 1;
 
               if (dayNumber < 1 || dayNumber > daysInMonth) {
-                return const SizedBox(width: 32, height: 32);
+                return const SizedBox(width: 36, height: 36);
               }
 
               final date = DateTime(now.year, now.month, dayNumber);
@@ -191,7 +206,7 @@ class PerfectDaysHeatmap extends StatelessWidget {
   }
 }
 
-/// Individual day cell in the calendar
+/// Individual day cell in the calendar — larger, more rounded
 class _DayCell extends StatelessWidget {
   final int day;
   final bool isPerfect;
@@ -211,30 +226,43 @@ class _DayCell extends StatelessWidget {
     Color textColor;
 
     if (isFuture) {
-      bgColor = AppColors.surfaceVariant;
-      textColor = AppColors.textTertiary;
+      bgColor = AppColors.surfaceVariant.withValues(alpha: 0.5);
+      textColor = AppColors.textTertiary.withValues(alpha: 0.6);
     } else if (isPerfect) {
-      bgColor = AppColors.success;
+      bgColor = const Color(0xFF10B981);
       textColor = Colors.white;
     } else {
-      bgColor = AppColors.border.withValues(alpha: 0.4);
+      bgColor = AppColors.border.withValues(alpha: 0.3);
       textColor = AppColors.textSecondary;
     }
 
     return Container(
-      width: 32,
-      height: 32,
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(6),
-        border: isToday ? Border.all(color: AppColors.primary, width: 2) : null,
+        borderRadius: BorderRadius.circular(10),
+        border: isToday
+            ? Border.all(color: AppColors.primary, width: 2.5)
+            : null,
+        boxShadow: isPerfect && !isFuture
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
       ),
       child: Center(
         child: Text(
           day.toString(),
           style: TextStyle(
             fontSize: 12,
-            fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+            fontWeight: isToday || isPerfect
+                ? FontWeight.bold
+                : FontWeight.w500,
             color: textColor,
           ),
         ),
@@ -256,17 +284,21 @@ class _LegendItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(3),
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 5),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textTertiary,
+          ),
         ),
       ],
     );
