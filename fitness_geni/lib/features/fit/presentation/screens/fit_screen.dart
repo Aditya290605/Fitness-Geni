@@ -12,7 +12,7 @@ import '../widgets/weekly_activity_chart.dart';
 import '../widgets/perfect_days_heatmap.dart';
 
 /// Fitness screen - Activity tracking with nutrition integration
-/// Calm, premium design following Fitness Geni UI guidelines
+/// Premium white theme with polished section design
 class FitScreen extends ConsumerStatefulWidget {
   const FitScreen({super.key});
 
@@ -24,11 +24,9 @@ class _FitScreenState extends ConsumerState<FitScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize fitness provider and load meal data on first load
     Future.microtask(() {
       ref.read(fitnessProvider.notifier).initialize();
       ref.read(perfectDaysProvider.notifier).loadPerfectDays();
-      // Load meals so protein progress card has data
       ref.read(mealProvider.notifier).loadMeals();
     });
   }
@@ -40,12 +38,11 @@ class _FitScreenState extends ConsumerState<FitScreen> {
     final perfectDaysState = ref.watch(perfectDaysProvider);
     final profile = ref.watch(currentProfileProvider);
 
-    // Nutrition targets from profile
     final proteinTarget = (profile?.dailyProtein ?? 150).toDouble();
     final proteinConsumed = mealState.consumedProtein;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -58,7 +55,7 @@ class _FitScreenState extends ConsumerState<FitScreen> {
           color: AppColors.primary,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -73,7 +70,7 @@ class _FitScreenState extends ConsumerState<FitScreen> {
                   proteinConsumed: proteinConsumed,
                   proteinTarget: proteinTarget,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
 
                 // Activity Stats - SECONDARY
                 ActivityStatsCard(
@@ -97,30 +94,35 @@ class _FitScreenState extends ConsumerState<FitScreen> {
                     ),
                   ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
 
                 // Weekly Activity Section
                 _buildSectionHeader(
                   'Weekly Activity',
-                  icon: Icons.show_chart_rounded,
+                  icon: Icons.bar_chart_rounded,
+                  color: const Color(0xFF10B981),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 WeeklyActivityChart(
                   weeklySteps: fitnessState.weeklySteps,
                   hasData:
                       fitnessState.hasPermission &&
                       fitnessState.weeklySteps.any((s) => s > 0),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 32),
 
                 // Perfect Days Section
-                _buildSectionHeader('Perfect Days', icon: Icons.star_rounded),
-                const SizedBox(height: 12),
+                _buildSectionHeader(
+                  'Perfect Days',
+                  icon: Icons.star_rounded,
+                  color: AppColors.warning,
+                ),
+                const SizedBox(height: 14),
                 PerfectDaysHeatmap(
                   perfectDays: perfectDaysState.perfectDays,
                   isLoading: perfectDaysState.isLoading,
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 40),
               ],
             ),
           ),
@@ -136,30 +138,48 @@ class _FitScreenState extends ConsumerState<FitScreen> {
         const Text(
           'Your Fitness',
           style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
+            fontSize: 30,
+            fontWeight: FontWeight.w800,
             color: AppColors.textPrimary,
+            letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           'Track your progress and stay motivated',
-          style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w400,
+            color: AppColors.textSecondary,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildSectionHeader(String title, {required IconData icon}) {
+  Widget _buildSectionHeader(
+    String title, {
+    required IconData icon,
+    Color? color,
+  }) {
+    final iconColor = color ?? AppColors.primary;
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppColors.primary),
-        const SizedBox(width: 8),
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Icon(icon, size: 18, color: iconColor),
+        ),
+        const SizedBox(width: 10),
         Text(
           title,
           style: const TextStyle(
             fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
           ),
         ),

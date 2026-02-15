@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// Secondary activity stats card showing steps, calories, and distance
-/// Clean horizontal layout with muted colors
-/// Non-dominating visual presence (supportive to protein progress)
+/// White card with colored icon badges and clean visual hierarchy
 class ActivityStatsCard extends StatelessWidget {
   final int steps;
   final double caloriesBurned;
@@ -22,14 +21,17 @@ class ActivityStatsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.border.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,7 +46,7 @@ class ActivityStatsCard extends StatelessWidget {
               color: AppColors.textTertiary,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
           // Stats row
           Row(
@@ -55,6 +57,7 @@ class ActivityStatsCard extends StatelessWidget {
                   value: _formatNumber(steps),
                   label: 'Steps',
                   iconColor: AppColors.primary,
+                  bgColor: AppColors.primary.withValues(alpha: 0.08),
                 ),
               ),
               _Divider(),
@@ -63,7 +66,8 @@ class ActivityStatsCard extends StatelessWidget {
                   icon: Icons.local_fire_department_rounded,
                   value: _formatNumber(caloriesBurned.toInt()),
                   label: 'Calories',
-                  iconColor: AppColors.warning,
+                  iconColor: const Color(0xFFF59E0B),
+                  bgColor: const Color(0xFFFEF3C7),
                 ),
               ),
               _Divider(),
@@ -72,7 +76,8 @@ class ActivityStatsCard extends StatelessWidget {
                   icon: Icons.route_rounded,
                   value: distanceKm.toStringAsFixed(1),
                   label: 'km',
-                  iconColor: AppColors.info,
+                  iconColor: const Color(0xFF3B82F6),
+                  bgColor: const Color(0xFFDBEAFE),
                 ),
               ),
             ],
@@ -80,7 +85,7 @@ class ActivityStatsCard extends StatelessWidget {
 
           // No data message
           if (!hasData) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -104,30 +109,40 @@ class ActivityStatsCard extends StatelessWidget {
   }
 }
 
-/// Individual stat tile within the row
+/// Individual stat tile with colored icon background
 class _StatTile extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
   final Color iconColor;
+  final Color bgColor;
 
   const _StatTile({
     required this.icon,
     required this.value,
     required this.label,
     required this.iconColor,
+    required this.bgColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, size: 22, color: iconColor.withValues(alpha: 0.8)),
-        const SizedBox(height: 8),
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Icon(icon, size: 20, color: iconColor),
+        ),
+        const SizedBox(height: 10),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 20,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
           ),
@@ -152,9 +167,19 @@ class _Divider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 1,
-      height: 40,
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      color: AppColors.border.withValues(alpha: 0.5),
+      height: 44,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.border.withValues(alpha: 0.0),
+            AppColors.border.withValues(alpha: 0.5),
+            AppColors.border.withValues(alpha: 0.0),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
     );
   }
 }
