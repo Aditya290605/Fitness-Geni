@@ -92,9 +92,12 @@ class ProfileScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.white, AppColors.primary.withOpacity(0.03)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: [
+            const Color.fromARGB(255, 184, 183, 183),
+            const Color.fromARGB(255, 45, 45, 45).withValues(alpha: 0.85),
+          ],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
@@ -169,27 +172,27 @@ class ProfileScreen extends ConsumerWidget {
                 Text(
                   profile.name,
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 26,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: Colors.white,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 12),
-                Row(
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
                   children: [
                     _buildInfoPill(
                       '${profile.age} yrs',
                       Icons.cake_rounded,
                       const Color(0xFFEC4899),
                     ),
-                    const SizedBox(width: 6),
                     _buildInfoPill(
                       '${profile.heightCm.round()} cm',
                       Icons.height_rounded,
                       const Color(0xFF3B82F6),
                     ),
-                    const SizedBox(width: 6),
                     _buildInfoPill(
                       '${profile.weightKg.round()} kg',
                       Icons.monitor_weight_outlined,
@@ -207,23 +210,23 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _buildInfoPill(String text, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.12), width: 0.5),
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
           Text(
             text,
-            style: TextStyle(
-              fontSize: 11,
+            style: const TextStyle(
+              fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: color,
+              color: Colors.white,
             ),
           ),
         ],
