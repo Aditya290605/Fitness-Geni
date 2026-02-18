@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +7,7 @@ import '../../../home/presentation/widgets/nutrition_statistics_card.dart';
 import '../../../home/presentation/widgets/meal_card.dart';
 import '../../../home/presentation/widgets/meal_detail_sheet.dart';
 import '../providers/stats_provider.dart';
+import '../widgets/overview_chart.dart';
 
 /// Stats screen — shows meal history with horizontal date slider
 /// Reuses NutritionStatisticsCard and MealCard from home page
@@ -79,70 +79,75 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               )
             : stats.error != null && stats.history.isEmpty
             ? _buildErrorState(stats.error!)
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: _buildHeader(),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // ── Bar graph: meal completion overview ──
-                  if (stats.history.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: _buildCompletionBarGraph(stats),
-                    ),
-
-                  const SizedBox(height: 20),
-
-                  // Month label
-                  if (stats.history.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            DateFormat(
-                              'MMMM yyyy',
-                            ).format(stats.history[_selectedIndex].date),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          Icon(
-                            Icons.calendar_today_rounded,
-                            size: 20,
-                            color: AppColors.textTertiary,
-                          ),
-                        ],
+            : RefreshIndicator(
+                onRefresh: () => ref.read(statsProvider.notifier).refresh(),
+                color: AppColors.primary,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                        child: _buildHeader(),
                       ),
-                    ),
 
-                  const SizedBox(height: 12),
+                      const SizedBox(height: 16),
 
-                  // Horizontal date slider
-                  if (stats.history.isNotEmpty) _buildDateSlider(stats),
+                      // ── Chart: meal completion overview ──
+                      if (stats.history.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: OverviewChart(history: stats.history),
+                        ),
 
-                  const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                  // Scrollable content for selected date
-                  Expanded(
-                    child: _buildSelectedDayContent(
-                      stats,
-                      caloriesTarget,
-                      proteinTarget,
-                      carbsTarget,
-                      fatTarget,
-                    ),
+                      // Month label
+                      if (stats.history.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                DateFormat(
+                                  'MMMM yyyy',
+                                ).format(stats.history[_selectedIndex].date),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              Icon(
+                                Icons.calendar_today_rounded,
+                                size: 20,
+                                color: AppColors.textTertiary,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      const SizedBox(height: 12),
+
+                      // Horizontal date slider
+                      if (stats.history.isNotEmpty) _buildDateSlider(stats),
+
+                      const SizedBox(height: 20),
+
+                      // Selected day content (inline, not nested scroll)
+                      _buildSelectedDayContent(
+                        stats,
+                        caloriesTarget,
+                        proteinTarget,
+                        carbsTarget,
+                        fatTarget,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
       ),
     );
@@ -172,180 +177,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  // ─── Completion bar graph (last 7 active days) ────────────────────
-  Widget _buildCompletionBarGraph(StatsState stats) {
-    // Take up to last 7 days from history (newest-first → first 7 items)
-    final recentDays = stats.history.take(7).toList().reversed.toList();
-    // oldest → newest for left-to-right display
-
-    // Find max total meals for scaling bars
-    final maxMeals = recentDays.fold<int>(
-      1,
-      (prev, d) => max(prev, d.totalMeals),
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF388E3C)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2E7D32).withValues(alpha: 0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: const Color(0xFF1B5E20).withValues(alpha: 0.15),
-            blurRadius: 40,
-            offset: const Offset(0, 16),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Weekly Overview',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${stats.activeDays} active',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // Bar graph
-          SizedBox(
-            height: 100,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: recentDays.map((day) {
-                final totalRatio = maxMeals > 0
-                    ? day.totalMeals / maxMeals
-                    : 0.0;
-                final completedRatio = day.totalMeals > 0
-                    ? day.completedMeals / day.totalMeals
-                    : 0.0;
-                final isToday = _isToday(day.date);
-                final dayLabel = DateFormat('E').format(day.date);
-
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        // Bar with gradient
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.bottomCenter,
-                            child: FractionallySizedBox(
-                              heightFactor: day.hasActivity
-                                  ? (totalRatio * 0.85 + 0.15)
-                                  : 0.12,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  gradient: day.hasActivity
-                                      ? LinearGradient(
-                                          begin: Alignment.bottomCenter,
-                                          end: Alignment.topCenter,
-                                          colors: [
-                                            Colors.white.withValues(alpha: 0.9),
-                                            Colors.white.withValues(
-                                              alpha:
-                                                  0.3 + (completedRatio * 0.6),
-                                            ),
-                                          ],
-                                        )
-                                      : null,
-                                  color: day.hasActivity
-                                      ? null
-                                      : Colors.white.withValues(alpha: 0.12),
-                                  boxShadow: day.hasActivity
-                                      ? [
-                                          BoxShadow(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.2,
-                                            ),
-                                            blurRadius: 6,
-                                            offset: const Offset(0, -2),
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: day.hasActivity && completedRatio == 1.0
-                                    ? Center(
-                                        child: Icon(
-                                          Icons.check_rounded,
-                                          color: const Color(0xFF1B5E20),
-                                          size: 14,
-                                        ),
-                                      )
-                                    : null,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        // Day label
-                        Text(
-                          dayLabel.substring(0, min(3, dayLabel.length)),
-                          style: TextStyle(
-                            color: isToday
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.6),
-                            fontSize: 11,
-                            fontWeight: isToday
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -445,10 +276,13 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     double fatTarget,
   ) {
     if (stats.history.isEmpty) {
-      return const Center(
-        child: Text(
-          'No data yet',
-          style: TextStyle(color: AppColors.textSecondary),
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(
+          child: Text(
+            'No data yet',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
         ),
       );
     }
@@ -456,96 +290,91 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     final day = stats.history[_selectedIndex];
     final isToday = _isToday(day.date);
 
-    return RefreshIndicator(
-      onRefresh: () => ref.read(statsProvider.notifier).refresh(),
-      color: AppColors.primary,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Nutrition Statistics Card (reused from home page)
-            NutritionStatisticsCard(
-              caloriesTarget: caloriesTarget,
-              caloriesConsumed: day.consumedCalories,
-              proteinTarget: proteinTarget,
-              proteinConsumed: day.consumedProtein,
-              carbsTarget: carbsTarget,
-              carbsConsumed: day.consumedCarbs,
-              fatTarget: fatTarget,
-              fatConsumed: day.consumedFats,
-            ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Nutrition Statistics Card (reused from home page)
+          NutritionStatisticsCard(
+            caloriesTarget: caloriesTarget,
+            caloriesConsumed: day.consumedCalories,
+            proteinTarget: proteinTarget,
+            proteinConsumed: day.consumedProtein,
+            carbsTarget: carbsTarget,
+            carbsConsumed: day.consumedCarbs,
+            fatTarget: fatTarget,
+            fatConsumed: day.consumedFats,
+          ),
 
-            const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-            // Meals section
-            Row(
-              children: [
-                Text(
-                  isToday ? "Today's Meals" : 'Meals',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (day.hasActivity)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: day.completedMeals == day.totalMeals
-                          ? AppColors.success.withValues(alpha: 0.1)
-                          : AppColors.warning.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${day.completedMeals}/${day.totalMeals}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: day.completedMeals == day.totalMeals
-                            ? AppColors.success
-                            : AppColors.warning,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Meal cards or empty state
-            if (!day.hasActivity)
-              _buildNoMealsState()
-            else
-              ...day.meals.map(
-                (meal) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: MealCard(
-                    meal: meal,
-                    onTap: () {
-                      MealDetailSheet.show(
-                        context,
-                        meal: meal,
-                        onMarkDone: isToday
-                            ? () {
-                                // Only allow marking done for today
-                              }
-                            : null,
-                      );
-                    },
-                  ),
+          // Meals section
+          Row(
+            children: [
+              Text(
+                isToday ? "Today's Meals" : 'Meals',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
               ),
+              const SizedBox(width: 8),
+              if (day.hasActivity)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: day.completedMeals == day.totalMeals
+                        ? AppColors.success.withValues(alpha: 0.1)
+                        : AppColors.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${day.completedMeals}/${day.totalMeals}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: day.completedMeals == day.totalMeals
+                          ? AppColors.success
+                          : AppColors.warning,
+                    ),
+                  ),
+                ),
+            ],
+          ),
 
-            const SizedBox(height: 40),
-          ],
-        ),
+          const SizedBox(height: 16),
+
+          // Meal cards or empty state
+          if (!day.hasActivity)
+            _buildNoMealsState()
+          else
+            ...day.meals.map(
+              (meal) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: MealCard(
+                  meal: meal,
+                  onTap: () {
+                    MealDetailSheet.show(
+                      context,
+                      meal: meal,
+                      onMarkDone: isToday
+                          ? () {
+                              // Only allow marking done for today
+                            }
+                          : null,
+                    );
+                  },
+                ),
+              ),
+            ),
+
+          const SizedBox(height: 40),
+        ],
       ),
     );
   }
