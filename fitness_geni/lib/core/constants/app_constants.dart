@@ -32,6 +32,7 @@ class AppConstants {
 
   // Tab Labels
   static const String tabHome = 'Home';
+  static const String tabStats = 'Stats';
   static const String tabFit = 'Fit';
   static const String tabProfile = 'Profile';
 

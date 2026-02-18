@@ -1,6 +1,6 @@
 class GeminiConfig {
   // Gemini API configuration
-  static const String apiKey = 'AIzaSyDbKHmio9PQr3IC5FCC1qSGWMr4zhEpwYI';
+  static const String apiKey = 'AIzaSyDpu_MBsgIEYKVmaFvVPi2zmdczIrxQ83s';
 
   // Model: gemini-2.5-flash (more stable than flash-lite)
   // FREE tier quota:
