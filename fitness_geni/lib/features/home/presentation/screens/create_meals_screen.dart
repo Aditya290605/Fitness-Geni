@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_button.dart';
+import '../providers/meal_catalog_provider.dart';
 import '../providers/meal_creation_provider.dart';
 import '../widgets/ingredient_chip.dart';
 import '../widgets/mode_selection_card.dart';
+import 'catalog_meal_selection_screen.dart';
 import 'meal_loading_screen.dart';
 import 'meals_preview_screen.dart';
 
@@ -43,6 +45,44 @@ class _CreateMealsScreenState extends ConsumerState<CreateMealsScreen> {
       return;
     }
 
+    // ─── CATALOG-FIRST FLOW (Surprise mode) ───
+    if (state.selectedMode == MealGenerationMode.surprise) {
+      await _generateFromCatalog();
+      return;
+    }
+
+    // ─── AI FLOW (Ingredients mode) ───
+    await _generateFromAI();
+  }
+
+  /// Generate meals from the pre-built catalog using the adaptive macro engine.
+  /// Instant (~200ms), no AI call, deterministic.
+  Future<void> _generateFromCatalog() async {
+    // Navigate to catalog selection screen
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const CatalogMealSelectionScreen(),
+        ),
+      );
+    }
+
+    // Trigger generation in the background
+    final success = await ref
+        .read(mealCatalogProvider.notifier)
+        .generateOptions();
+
+    if (!success && mounted) {
+      // Catalog failed → fallback to AI
+      Navigator.pop(context); // pop catalog screen
+      _showWarning('Catalog unavailable, falling back to AI generation...');
+      await _generateFromAI();
+    }
+  }
+
+  /// Generate meals using Gemini AI (original flow).
+  Future<void> _generateFromAI() async {
     // Navigate to loading screen immediately
     if (mounted) {
       Navigator.push(
@@ -141,8 +181,9 @@ class _CreateMealsScreenState extends ConsumerState<CreateMealsScreen> {
 
                     ModeSelectionCard(
                       icon: Icons.auto_awesome,
-                      title: 'Surprise me with balanced meals',
-                      description: 'Get a smart, balanced meal plan',
+                      title: 'Smart Meal Engine',
+                      description:
+                          'Instant macro-optimized meals from our catalog',
                       isSelected:
                           state.selectedMode == MealGenerationMode.surprise,
                       onTap: () {
@@ -275,16 +316,55 @@ class _CreateMealsScreenState extends ConsumerState<CreateMealsScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(Icons.lightbulb_outline, color: AppColors.primary, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'We\'ll generate a balanced set of meals based on your goal.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
+          Row(
+            children: [
+              Icon(Icons.bolt, color: AppColors.primary, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Our smart engine will find macro-optimized meals from 79+ recipes instantly.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildFeatureTag(Icons.restaurant_menu, '4 Sections'),
+              const SizedBox(width: 8),
+              _buildFeatureTag(Icons.tune, '4 Options Each'),
+              const SizedBox(width: 8),
+              _buildFeatureTag(Icons.speed, 'Instant'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureTag(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: AppColors.primary),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
             ),
           ),
         ],
