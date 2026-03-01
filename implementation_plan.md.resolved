@@ -1,0 +1,665 @@
+# Adaptive Macro Engine — v5 (Production-Grade)
+
+## End-to-End Runtime Lifecycle
+
+```mermaid
+flowchart TD
+    A["① Profile → NutritionCalculator\n(daily targets)"] --> B["② Progressive DB Fetch\n(single query, fallback widening)"]
+    B --> C["③ Pre-Group by meal_type\n(O(n) single pass)"]
+    C --> D["④ Compute Initial Section Targets\n(weighted importance + goal shift)"]
+    D --> E["⑤ Macro Conservation Enforcement\n(redistribute delta → Σ = daily)"]
+    E --> F["⑥ Compute Deficits + Weights\n(directional amplification)"]
+    F --> G["⑦ Adaptive Rejection Filter\n(progress-scaled bounds)"]
+    G --> H["⑧ Starvation Recovery\n(if eligible < threshold)"]
+    H --> I["⑨ Score Each Candidate\n(unified formula, asymmetric penalty)"]
+    I --> J["⑩ Apply Macro Skew Penalty\n(goal-aware ideal ranges)"]
+    J --> K["⑪ Deterministic Diversity\n(yesterday penalty → pool → seed shuffle)"]
+    K --> L["⑫ Render 4 Options Per Section"]
+    L --> M["⑬ User Selects → Re-Score\n(remaining recomputed, unselected sections updated)"]
+    M --> N["⑭ All Selected → saveMeals()\n(existing flow, unchanged)"]
+```
+
+### Step-by-Step Execution Order
+
+| Step | What | When Normalization? | When Conservation? | When Directional? | When Fallback? |
+|------|------|--------------------|--------------------|-------------------|----------------|
+| ① | `NutritionCalculator.calculateTargets(profile)` → `daily` | — | — | — | — |
+| ② | Single Supabase query with calorie bounds; widen if < 2 per section | — | — | — | ✅ Steps 2a-2d |
+| ③ | `groupBy(meal_type)` in memory | — | — | — | — |
+| ④ | `initialSectionTarget()` with goal timing shifts | — | — | — | — |
+| ⑤ | Redistribute delta so `Σ targets = daily` per macro | — | ✅ Here | — | — |
+| ⑥ | `computeWeights()` with directional multipliers | ✅ Normalize weights here | — | ✅ Here | — |
+| ⑦ | Reject meals outside `[lower×, upper×]` of sectionTarget.cal | — | — | — | — |
+| ⑧ | If eligible < 4: relax skew → relax bounds → all candidates → AI | — | — | — | ✅ Here |
+| ⑨ | `score()` with asymmetric deviation penalties | — | — | ✅ Here | — |
+| ⑩ | `macroSkewPenalty()` with goal-aware ideal ranges | — | — | — | — |
+| ⑪ | Yesterday penalty → pool sizing → deterministic shuffle | — | — | — | — |
+| ⑫ | UI renders options | — | — | — | — |
+| ⑬ | `onUserSelect()` → recompute `remaining` (getter) → re-run ⑥-⑪ for unselected | ✅ Each re-score | — | ✅ Each re-score | ✅ If starvation |
+| ⑭ | `MealService.saveMeals()` — unchanged | — | — | — | — |
+
+---
+
+## Stability Invariants
+
+Eight guarantees enforced at all times:
+
+| # | Invariant | Enforcement |
+|---|-----------|-------------|
+| INV-1 | `score ∈ [0.0, 1.0]` | `clamp(1.0 - error, 0.0, 1.0)` after every score computation |
+| INV-2 | `Σ weights = 1.0` | Division by `total` in `computeWeights()` |
+| INV-3 | No division by zero | All denominators use `max(value, 0.01)` where `value` could be zero |
+| INV-4 | `sectionTarget[macro] ≥ 0` | `max(0, remaining / remainingSections)` for each macro |
+| INV-5 | `Σ initialTargets = daily` per macro | Conservation redistribution in Step ⑤ |
+| INV-6 | `dynamicFactor > 0` | `baseFactor = 1.2`, all additive terms ≥ 0 |
+| INV-7 | `skewPenalty ∈ [0.0, 0.3]` | [min(0.3, penalty)](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/core/services/gemini_service.dart#10-172) cap |
+| INV-8 | `remaining` consistent | Computed getter from `daily - Σ(selected meals)`, never stored |
+
+---
+
+## ① Daily Targets
+
+```
+daily = NutritionCalculator.calculateTargets(profile)
+// Returns: { cal: int, prot: int, carbs: int, fats: int }
+// Example: { cal: 2000, prot: 120, carbs: 200, fats: 65 }
+```
+
+---
+
+## ② Progressive DB Fetch
+
+```
+FUNCTION fetchCandidates(dailyCal, dietTypes):
+  steps = [
+    { lo: 0.10, hi: 0.45 },    // standard
+    { lo: 0.07, hi: 0.55 },    // widen 40%
+    { lo: 0.05, hi: 0.65 },    // widen further
+    { lo: 0.00, hi: 1.00 },    // unrestricted
+  ]
+  FOR step IN steps:
+    meals = supabase.from('meal_catalog').select()
+      .inFilter('diet_type', dietTypes)
+      .gte('calories', (dailyCal * step.lo).round())
+      .lte('calories', (dailyCal * step.hi).round())
+
+    grouped = groupByMealType(meals)                        // Step ③
+
+    IF grouped.values.every((list) => list.length >= 2):
+      RETURN grouped
+  RETURN null    // triggers AI fallback
+```
+
+---
+
+## ④⑤ Initial Section Targets + Conservation
+
+### Target Computation
+
+```
+CONSTANTS:
+  baseWeight = { breakfast: 1.0, lunch: 1.2, snack: 0.4, dinner: 1.0 }
+  goalAdjust(goal) =
+    weight_loss: { breakfast: 0.0, lunch: 0.0, snack: -0.05, dinner: +0.15 }
+    bulking:     { breakfast: +0.05, lunch: +0.15, snack: 0.0, dinner: 0.0 }
+    maintain:    { breakfast: 0.0, lunch: 0.0, snack: 0.0, dinner: 0.0 }
+
+FUNCTION computeInitialTargets(daily, goal):
+  // Step A: Compute base shares (normalized)
+  adjusted = { t: baseWeight[t] + goalAdjust(goal)[t]  FOR t IN allTypes }
+  totalW = Σ adjusted[t]
+  shares = { t: adjusted[t] / totalW  FOR t IN allTypes }
+  // Guaranteed: Σ shares = 1.0
+
+  // Step B: Distribute macros by share
+  targets = {}
+  FOR t IN allTypes:
+    targets[t] = {
+      cal:   daily.cal   × shares[t],
+      prot:  daily.prot  × shares[t],
+      carbs: daily.carbs × shares[t],
+      fats:  daily.fats  × shares[t],
+    }
+  // At this point: Σ targets[t].prot == daily.prot (exact, by construction)
+
+  // Step C: Goal timing shifts
+  shiftApplied = {}
+  IF goal == "weight_loss":
+    shiftApplied["dinner.prot"] = targets["dinner"].prot × 0.15
+    targets["dinner"].prot *= 1.15
+  IF goal == "bulking":
+    shiftApplied["lunch.carbs"] = targets["lunch"].carbs × 0.10
+    targets["lunch"].carbs *= 1.10
+
+  // Step D: Conservation redistribution (INV-5)
+  FOR each shifted macro (e.g., prot):
+    delta = shiftApplied amount            // e.g., dinner got +4.5g prot
+    nonShifted = sections where this macro was NOT shifted
+    totalNonShifted = Σ targets[j].prot FOR j IN nonShifted
+    FOR j IN nonShifted:
+      targets[j].prot -= delta × (targets[j].prot / totalNonShifted)
+
+  // PROOF of conservation:
+  //   Before shift: Σ prot = daily.prot (by construction)
+  //   shift adds +delta to one section
+  //   redistribution subtracts Σ(delta × share_j / Σshare_j) = delta × 1 = delta
+  //   After: Σ prot = daily.prot + delta - delta = daily.prot ✓
+
+  RETURN targets
+```
+
+### Numeric Example (weight_loss, daily.prot = 120g)
+
+```
+shares: breakfast=27.0%, lunch=32.4%, snack=9.5%, dinner=31.1%
+initial prot: B=32.4, L=38.9, S=11.4, D=37.3  (Σ=120.0)
+
+shift: D.prot *= 1.15 → D.prot = 42.9, delta = 5.6g
+nonShifted: B(32.4), L(38.9), S(11.4)  totalNS = 82.7
+
+redistribute:
+  B.prot -= 5.6 × 32.4/82.7 = 5.6 × 0.392 = 2.2 → B.prot = 30.2
+  L.prot -= 5.6 × 38.9/82.7 = 5.6 × 0.470 = 2.6 → L.prot = 36.3
+  S.prot -= 5.6 × 11.4/82.7 = 5.6 × 0.138 = 0.8 → S.prot = 10.6
+
+Final: B=30.2 + L=36.3 + S=10.6 + D=42.9 = 120.0 ✓
+```
+
+---
+
+## ⑥ Weights: Deficit + Directional Amplification + Bounded Spread
+
+### Deficit Computation
+
+```
+FUNCTION computeDeficits(remaining, daily):
+  RETURN {
+    cal:  remaining.cal  / max(daily.cal, 1),       // range ≈ [-0.5, 1.0]
+    prot: remaining.prot / max(daily.prot, 0.01),
+    carb: remaining.carb / max(daily.carbs, 0.01),
+    fat:  remaining.fat  / max(daily.fats, 0.01),
+  }
+  // Negative = overconsumed.  Positive = still needed.
+```
+
+### Directional Amplification Table
+
+```
+                    Undershoot (deficit > 0)    Overshoot (deficit < 0)
+Calories            1.0                         1.3
+Protein             1.3                         0.8
+Carbs               1.0                         1.1
+Fats                0.9                         1.2
+```
+
+| Direction | Multiplier | Rationale |
+|-----------|-----------|-----------|
+| Cal overshoot 1.3 | Excess calories → fat storage; most damaging nutritional error |
+| Prot undershoot 1.3 | Protein deficit → muscle loss; highest priority to recover |
+| Prot overshoot 0.8 | Excess protein excreted; no harm, dampen response |
+| Fat overshoot 1.2 | Calorie-dense; easy to cascade into calorie excess |
+| Fat undershoot 0.9 | Mild fat deficit is tolerable short-term |
+| Carb overshoot 1.1 | Moderate — can cause energy spikes but less harmful than cal/prot |
+| Cal/Carb undershoot 1.0 | Neutral — slight deficit often acceptable |
+
+```
+FUNCTION directionalDeficit(deficit, macro):
+  IF deficit >= 0:
+    mult = undershootMultiplier[macro]
+  ELSE:
+    mult = overshootMultiplier[macro]
+  RETURN |deficit| × mult
+```
+
+### Dynamic Factor (Bounded Spread)
+
+```
+FUNCTION computeDynamicFactor(completedSelections, deficits):
+  progress = completedSelections / 3
+
+  deficitValues = [
+    directionalDeficit(deficits.cal, "cal"),
+    directionalDeficit(deficits.prot, "prot"),
+    directionalDeficit(deficits.carb, "carb"),
+    directionalDeficit(deficits.fat, "fat"),
+  ]
+  spread = max(deficitValues) - min(deficitValues)
+
+  // Bounded contribution: logarithmic scaling
+  spreadContribution = log₂(1 + spread)
+  // spread ∈ [0, ~2.0]
+  // log₂(1+0) = 0.00
+  // log₂(1+0.5) = 0.58
+  // log₂(1+1.0) = 1.00
+  // log₂(1+1.5) = 1.32
+  // log₂(1+2.0) = 1.58   ← theoretical max
+  // Sublinear growth prevents over-amplification at extreme imbalance
+
+  baseFactor = 1.2
+  RETURN baseFactor × (1.0 + progress + spreadContribution)
+```
+
+| Scenario | Progress | Spread | log₂(1+s) | Factor |
+|----------|----------|--------|-----------|--------|
+| Initial, balanced | 0.0 | 0.0 | 0.00 | 1.20 |
+| Lunch, mild imbalance | 0.33 | 0.3 | 0.38 | 2.05 |
+| Snack, moderate imbalance | 0.67 | 0.6 | 0.68 | 2.82 |
+| Dinner, balanced | 1.00 | 0.1 | 0.14 | 2.57 |
+| Dinner, severe imbalance | 1.00 | 1.0 | 1.00 | 3.60 |
+
+### Full Weight Computation
+
+```
+FUNCTION computeWeights(deficits, goal, completedSelections):
+  dynamicFactor = computeDynamicFactor(completedSelections, deficits)
+
+  // Directional effective deficits
+  eff_cal  = directionalDeficit(deficits.cal, "cal")
+  eff_prot = directionalDeficit(deficits.prot, "prot")
+  eff_carb = directionalDeficit(deficits.carb, "carb")
+  eff_fat  = directionalDeficit(deficits.fat, "fat")
+
+  // Raw weights
+  w_cal  = 1.0 + eff_cal  × dynamicFactor
+  w_prot = 1.0 + eff_prot × dynamicFactor
+  w_carb = 1.0 + eff_carb × dynamicFactor
+  w_fat  = 1.0 + eff_fat  × dynamicFactor
+
+  // Goal bias (capped at 0.5)
+  IF goal == "weight_loss":
+    w_prot += 0.5;  w_fat += 0.2
+  ELSE IF goal == "bulking":
+    w_carb += 0.4;  w_cal += 0.3
+
+  // Normalize (INV-2)
+  total = w_cal + w_prot + w_carb + w_fat
+  RETURN { cal: w_cal/total, prot: w_prot/total, carb: w_carb/total, fat: w_fat/total }
+
+  // INV-2 proof: Σ (w_i / total) = total / total = 1.0 ✓
+  // Ratio preservation: w_a > w_b → w_a/total > w_b/total ✓
+  // Dominance: if eff_prot = 1.3 and eff_carb = 0.3 at dinner (factor=3.6):
+  //   w_prot = 1 + 1.3×3.6 + 0.5 = 6.18
+  //   w_carb = 1 + 0.3×3.6 = 2.08
+  //   ratio = 6.18 / 2.08 = 2.97× → protein dominates ✓
+```
+
+---
+
+## ⑦ Adaptive Rejection + ⑧ Starvation Recovery
+
+### Rejection Bounds
+
+```
+progress = completedSelections / 3
+upperMult(progress) = 2.0 - 0.5 × progress     // 2.0 → 1.5
+lowerMult(progress) = 0.2 + 0.2 × progress     // 0.2 → 0.4
+```
+
+### Starvation Recovery Chain (deterministic)
+
+```
+FUNCTION getEligible(candidates, sectionTarget, progress, goal):
+  upper = sectionTarget.cal × upperMult(progress)
+  lower = sectionTarget.cal × lowerMult(progress)
+
+  // LEVEL 0: Full filtering
+  eligible = candidates.filter(m => m.cal >= lower AND m.cal <= upper)
+  IF eligible.length >= 4: RETURN (eligible, level: 0)
+
+  // LEVEL 1: Widen bounds by 50%
+  wideUpper = sectionTarget.cal × (upperMult(progress) + 0.5)
+  wideLower = sectionTarget.cal × max(0.1, lowerMult(progress) - 0.1)
+  eligible = candidates.filter(m => m.cal >= wideLower AND m.cal <= wideUpper)
+  IF eligible.length >= 4: RETURN (eligible, level: 1)
+
+  // LEVEL 2: Remove calorie filter entirely
+  eligible = candidates    // all meals of this meal_type
+  IF eligible.length >= 2: RETURN (eligible, level: 2)
+
+  // LEVEL 3: AI fallback for this section
+  RETURN (null, level: 3)
+```
+
+### UI Degradation Rules
+
+| Eligible Count | UI Behavior |
+|---------------|-------------|
+| ≥ 4 | Show 4 cards, user picks 1 |
+| 3 | Show 3 cards, user picks 1 |
+| 2 | Show 2 cards, user picks 1 |
+| 1 | Show 1 card, auto-selected with info banner |
+| 0 | Section generated by AI fallback; show AI-generated card with "✨ AI" badge |
+
+---
+
+## ⑨ Scoring: Asymmetric Unified Formula
+
+```
+FUNCTION computeDeviation(mealValue, targetValue, macro):
+  denom = max(targetValue, 0.01)                  // INV-3: no div-by-zero
+  raw = (mealValue - targetValue) / denom          // signed deviation
+
+  // Asymmetric multipliers
+  IF macro == "cal" AND raw > 0:    RETURN |raw| × 1.3    // calorie overshoot
+  IF macro == "prot" AND raw < 0:   RETURN |raw| × 1.25   // protein undershoot
+  IF macro == "fat" AND raw > 0:    RETURN |raw| × 1.1    // fat overshoot
+  RETURN |raw|                                             // all others: symmetric
+
+FUNCTION score(meal, sectionTarget, weights):
+  error =
+    weights.cal  × computeDeviation(meal.cal,  sectionTarget.cal,  "cal") +
+    weights.prot × computeDeviation(meal.prot, sectionTarget.prot, "prot") +
+    weights.carb × computeDeviation(meal.carb, sectionTarget.carb, "carb") +
+    weights.fat  × computeDeviation(meal.fat,  sectionTarget.fat,  "fat")
+
+  RETURN clamp(1.0 - error, 0.0, 1.0)              // INV-1: score ∈ [0,1]
+```
+
+---
+
+## ⑩ Goal-Aware Macro Skew Penalty
+
+### Ideal Caloric Ratio Ranges Per Goal
+
+```
+goalIdealRanges(goal):
+  weight_loss:
+    protein: [0.25, 0.40]    // high protein priority
+    carbs:   [0.25, 0.45]    // restricted carbs
+    fats:    [0.20, 0.35]
+  bulking:
+    protein: [0.20, 0.35]
+    carbs:   [0.40, 0.60]    // high carb tolerance
+    fats:    [0.15, 0.30]    // lean bulk → restrict fat
+  maintain:
+    protein: [0.20, 0.35]
+    carbs:   [0.35, 0.55]
+    fats:    [0.20, 0.35]
+```
+
+### Penalty Formula
+
+```
+FUNCTION macroSkewPenalty(meal, goal):
+  totalCal = max(meal.cal, 1)                           // INV-3
+  protR = (meal.prot × 4) / totalCal
+  carbR = (meal.carb × 4) / totalCal
+  fatR  = (meal.fat  × 9) / totalCal
+
+  ranges = goalIdealRanges(goal)
+
+  // Overshoot/undershoot from ideal range
+  protExcess = max(0, protR - ranges.prot.upper) + max(0, ranges.prot.lower - protR)
+  carbExcess = max(0, carbR - ranges.carbs.upper) + max(0, ranges.carbs.lower - carbR)
+  fatExcess  = max(0, fatR  - ranges.fats.upper)  + max(0, ranges.fats.lower  - fatR)
+
+  rawPenalty = protExcess + carbExcess + fatExcess
+  RETURN min(0.3, rawPenalty)                            // INV-7: capped
+```
+
+### Examples (weight_loss)
+
+| Meal Ratios P/C/F | Over ideal? | rawPenalty | Final |
+|-------------------|-------------|-----------|-------|
+| 30%/40%/30% | All in range | 0.00 | 0.00 |
+| 15%/60%/25% | P below 25% by 0.10, C above 45% by 0.15 | 0.25 | 0.25 |
+| 10%/70%/20% | P below by 0.15, C above by 0.25 | 0.40 | 0.30 (capped) |
+| 35%/35%/30% | All in range | 0.00 | 0.00 |
+
+---
+
+## ⑪ Diversity
+
+```
+FUNCTION diversify(scoredMeals, userId, sectionIndex, yesterdayMealIds):
+  // Layer 1: Yesterday penalty
+  FOR m IN scoredMeals:
+    IF m.id IN yesterdayMealIds:
+      m.score ×= 0.85
+
+  scoredMeals.sortDescending(by: score)
+
+  // Layer 2: Dynamic pool = 60% of available (min 4)
+  poolSize = max(4, ceil(scoredMeals.length × 0.6))
+  pool = scoredMeals.take(min(poolSize, scoredMeals.length))
+
+  // Layer 3: Deterministic shuffle
+  seed = "$userId-${today()}-$sectionIndex".hashCode
+  pool.shuffle(Random(seed))
+
+  RETURN pool.take(min(4, pool.length))
+```
+
+---
+
+## Full Generation Pseudocode
+
+```
+FUNCTION generateMealOptions(profile, goal):
+  // ①
+  daily = NutritionCalculator.calculateTargets(profile)
+  IF daily.cal <= 0: RETURN error("Complete your profile")
+
+  // ②③
+  dietTypes = profile.dietType == "nonveg" ? ["veg","nonveg"] : ["veg"]
+  allCandidates = fetchCandidates(daily.cal, dietTypes)
+  IF allCandidates == null: RETURN fallbackToGemini(profile)
+
+  // ④⑤
+  sectionTargets = computeInitialTargets(daily, goal)
+  // INV-5 guaranteed by conservation redistribution
+
+  // Load yesterday
+  yesterdayIds = SharedPrefs.getStringList('yesterday_meals') ?? []
+
+  sections = [breakfast, lunch, snack, dinner]
+  options = {}
+  deficits = { cal:1.0, prot:1.0, carb:1.0, fat:1.0 }
+
+  FOR i, section IN enumerate(sections):
+    target = sectionTargets[section]
+    candidates = allCandidates[section]
+
+    // ⑥
+    weights = computeWeights(deficits, goal, completedSelections=0)
+
+    // ⑦⑧
+    (eligible, level) = getEligible(candidates, target, progress=0, goal)
+    IF level == 3:
+      options[section] = aiFallbackForSection(section, target)
+      CONTINUE
+
+    // ⑨⑩
+    scored = eligible.map(m =>
+      rawScore = score(m, target, weights)
+      skew = macroSkewPenalty(m, goal)
+      finalScore = rawScore × (1.0 - skew)          // INV-1: still ∈ [0,1]
+      RETURN ScoredMeal(m, finalScore)
+    )
+
+    // ⑪
+    options[section] = diversify(scored, profile.id, i, yesterdayIds)
+
+  RETURN options
+```
+
+---
+
+## Full Re-Score Pseudocode
+
+```
+FUNCTION onUserSelect(sectionIndex, selectedMeal, state):
+  state.selections[sections[sectionIndex]] = selectedMeal
+
+  // INV-8: remaining is a computed getter
+  consumed = Σ(sel.macros FOR sel IN state.selections.values WHERE sel != null)
+  remaining = state.daily - consumed                // can go negative per macro
+  completedSelections = count(non-null in state.selections)
+  remainingSections = 4 - completedSelections
+
+  IF remainingSections == 0: RETURN
+
+  // ⑥ recompute
+  deficits = computeDeficits(remaining, state.daily)
+  weights = computeWeights(deficits, state.goal, completedSelections)
+  progress = completedSelections / 3
+
+  FOR j, section IN enumerate(sections):
+    IF state.selections[section] != null: CONTINUE
+
+    // ④ dynamic target (INV-4: clamped ≥ 0)
+    sectionTarget = {
+      cal:   max(0, remaining.cal   / remainingSections),
+      prot:  max(0, remaining.prot  / remainingSections),
+      carbs: max(0, remaining.carbs / remainingSections),
+      fats:  max(0, remaining.fats  / remainingSections),
+    }
+
+    // ⑦⑧
+    (eligible, level) = getEligible(state.allCandidates[section], sectionTarget, progress, state.goal)
+    IF level == 3:
+      state.options[section] = aiFallbackForSection(section, sectionTarget)
+      CONTINUE
+
+    // ⑨⑩⑪
+    scored = eligible.map(m =>
+      rawScore = score(m, sectionTarget, weights)
+      skew = macroSkewPenalty(m, state.goal)
+      RETURN ScoredMeal(m, rawScore × (1.0 - skew))
+    )
+    state.options[section] = diversify(scored, state.userId, j, state.yesterdayIds)
+```
+
+---
+
+## Formal Complexity
+
+### Definitions
+
+| Symbol | Meaning | Typical Value |
+|--------|---------|---------------|
+| n | Total meals fetched | 40-60 |
+| s | Sections (constant) | 4 |
+| k_i | Candidates for section i | 10-20 |
+| k | max(k_i) | ≤ 25 |
+
+### Analysis
+
+```
+Phase      Operation                     Time
+───────────────────────────────────────────────────
+Fetch      1 Supabase query              O(1) network
+Group      Partition n meals by type      O(n)
+───────────────────────────────────────────────────
+Initial scoring (per section i):
+  Rejection filter                        O(k_i)
+  Score + skew computation                O(k_i)     // 10 ops per meal
+  Sort                                    O(k_i log k_i)
+  Diversity                               O(k_i)     // bounded by pool
+  Section total                           O(k_i log k_i)
+
+All sections:                             Σ O(k_i log k_i)
+
+  By Jensen's inequality on convex f(x) = x log x:
+  Σ k_i log k_i ≤ n log(n/s) + n  when  Σk_i = n
+  Since s=4:  ≤ n log(n/4) + n ≤ n log n
+
+Initial total:                            O(n) + O(n log n) = O(n log n)
+───────────────────────────────────────────────────
+Re-score (triggered ≤ 3 times):
+  Weights recomputation                   O(1)
+  Per unselected section                  O(k_j log k_j)
+  Sections re-scored: ≤ 3
+  Per trigger:                            O(Σ k_j log k_j) ≤ O(n log n)
+  All triggers (≤3):                      O(3 × n log n) = O(n log n)
+───────────────────────────────────────────────────
+TOTAL:  O(n log n) + O(1) network
+
+For n=60:  ~360 comparisons + ~720 arithmetic ops ≈ 1100 total
+At 10⁹ ops/sec:  ≈ 1.1 μs CPU
+Network:  ~100-200 ms (dominates)
+```
+
+### Space: [O(n)](file:///Users/adityamagar/Fitness-Geni/fitness_geni/lib/core/services/meal_service.dart#78-109) — ~60 meals × ~200 bytes + scored copies ≈ 50 KB
+
+---
+
+## Provider State
+
+```dart
+class MealCatalogState {
+  final Map<String, List<CatalogMeal>> allCandidates;
+  final Map<String, List<ScoredMeal>> options;        // 1-4 per section
+  final Map<String, CatalogMeal?> selections;
+  final MacroBudget daily;
+  final String goal;
+  final List<String> yesterdayMealIds;
+  final Map<String, int> starvationLevels;            // section → recovery level
+  final bool isLoading;
+  final String? error;
+
+  // INV-8: computed, never stored
+  MacroBudget get remaining =>
+    daily - selections.values.whereType<CatalogMeal>()
+      .fold(MacroBudget.zero, (s, m) => s + m.macros);
+
+  int get completedSelections =>
+    selections.values.where((v) => v != null).length;
+  bool get allSelected => completedSelections == 4;
+}
+```
+
+---
+
+## File Architecture
+
+```
+lib/core/
+├── services/
+│   ├── meal_catalog_service.dart    [NEW]  fetchCandidates() + progressive fallback
+│   ├── gemini_service.dart          [KEEP]
+│   └── meal_service.dart            [KEEP]
+└── utils/
+    ├── adaptive_macro_engine.dart   [NEW]  all formulas from this document
+    └── nutrition_calculator.dart    [KEEP]
+
+lib/features/home/
+├── domain/models/
+│   ├── meal.dart                   [KEEP]
+│   └── catalog_meal.dart           [NEW]
+└── presentation/
+    ├── providers/
+    │   ├── meal_catalog_provider.dart    [NEW]
+    │   ├── meal_creation_provider.dart   [MODIFY]
+    │   └── meal_provider.dart           [KEEP]
+    ├── screens/
+    │   ├── catalog_meal_selection_screen.dart  [NEW]
+    │   ├── create_meals_screen.dart            [MODIFY]
+    │   └── meals_preview_screen.dart           [KEEP]
+    └── widgets/
+        ├── catalog_meal_card.dart    [NEW]
+        └── meal_card.dart           [KEEP]
+```
+
+---
+
+## Edge Cases
+
+| Scenario | Handling | Recovery Level |
+|----------|----------|----------------|
+| Section has 0 candidates after full filter | Starvation recovery: L1→L2→L3→AI | 0-3 |
+| remaining goes negative on a macro | `abs()` in weights, `max(0)` in target, low-macro meals score best | — |
+| Profile incomplete | Block generation, show bottom sheet | — |
+| DB unreachable | Show error with retry button | — |
+| User deselects previous choice | `remaining` recomputed via getter, all unselected re-scored | — |
+| 1200 kcal user, narrow catalog | Progressive fetch widens in 4 steps | — |
+| Same meals daily | 15% yesterday penalty + date-based seed rotation | — |
+| Meal is 90% carbs (skewed) | Goal-aware skew penalty up to -30% score | — |
+| sectionTarget.cal = 0 after overconsumption | Target clamps to 0; lightest meals score best; bounds use `max(0.01, target)` | — |
+
+---
+
+> [!IMPORTANT]
+> Before implementation:
+> 1. Is `meal_catalog` table already created with 79 meals in Supabase?
+> 2. Do catalog meals have `ingredients` and `recipe_steps`, or only name + macros + image?

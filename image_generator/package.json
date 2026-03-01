@@ -1,6 +1,7 @@
 {
   "name": "image_generator",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "meal-image-generator.js",
   "scripts": {
@@ -9,12 +10,14 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+
   "dependencies": {
     "@google/genai": "^1.43.0",
     "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.98.0",
     "dotenv": "^17.3.1",
     "fs": "^0.0.1-security",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "path": "^0.12.7"
   }
 }
