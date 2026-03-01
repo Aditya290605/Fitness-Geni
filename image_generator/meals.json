@@ -1,0 +1,318 @@
+[
+  {
+    "id": "7c535121-9f06-4e3e-8b87-f96c8f4b8b92",
+    "name": "Moong Dal Chilla with Mint Curd"
+  },
+  {
+    "id": "ef9d248f-b329-4078-b42b-21abe2814822",
+    "name": "Paneer Bhurji with Whole Wheat Rotis"
+  },
+  {
+    "id": "20d0094a-4119-4737-ad62-831bc52ea1b8",
+    "name": "Egg Bhurji with Whole Wheat Rotis"
+  },
+  {
+    "id": "b4dd00c0-6ed6-460d-852e-18d1cfc59e4f",
+    "name": "Soya Chunk Stuffed Paratha with Curd"
+  },
+  {
+    "id": "d5d1cd22-0d51-4476-aef3-384f01e87c81",
+    "name": "Idli with Protein-Rich Sambar"
+  },
+  {
+    "id": "9a560fd7-c47e-4bb5-a67f-1d14ad98b2e0",
+    "name": "Hung Curd Peanut Banana Bowl"
+  },
+  {
+    "id": "0e086934-3b37-4c98-89aa-47eefc0b58e0",
+    "name": "Chicken Omelette with Multigrain Toast"
+  },
+  {
+    "id": "ff876a91-acbe-4167-9099-bb5ed557a4ef",
+    "name": "Sprouted Moong Salad with Boiled Eggs"
+  },
+  {
+    "id": "d2b0b55d-6558-401e-bfe6-355d1849ecd8",
+    "name": "Millet Porridge with Nuts"
+  },
+  {
+    "id": "45b5b0c0-b005-4560-ac97-b84be7ec9478",
+    "name": "Paneer Spinach Grilled Sandwich"
+  },
+  {
+    "id": "3dbb5019-5803-4dc5-87a4-29a30d719f27",
+    "name": "Besan Spinach Chilla with Curd"
+  },
+  {
+    "id": "a20e526f-3e8f-45cb-ae90-05c957474551",
+    "name": "Rajma Brown Rice Breakfast Bowl"
+  },
+  {
+    "id": "20c19465-0e66-4c3b-938d-ccccd688db15",
+    "name": "Oats Moong Dal Pancake"
+  },
+  {
+    "id": "c9b875fd-f23c-4798-852d-c3d0f8098efb",
+    "name": "Egg White Spinach Scramble with Toast"
+  },
+  {
+    "id": "480fd6d6-96d8-4d1d-80be-f1c4f8c4163e",
+    "name": "Peanut Butter Banana Sandwich"
+  },
+  {
+    "id": "12cac449-143c-42b1-afc7-63c06f564517",
+    "name": "Besan Vegetable Uttapam"
+  },
+  {
+    "id": "0248d312-3509-468e-92ee-d9eda510d36b",
+    "name": "Boiled Eggs with Sweet Potato"
+  },
+  {
+    "id": "7ac5fc14-57ca-43ed-b8c8-40e2fe2a8fac",
+    "name": "Paneer Millet Upma"
+  },
+  {
+    "id": "0f631657-9aa4-4d3b-baeb-4562f6961d48",
+    "name": "Chicken Vegetable Oats Bowl"
+  },
+  {
+    "id": "1f45a9c0-247e-4c47-b651-45a42d357929",
+    "name": "Sprouted Chana Paneer Salad"
+  },
+  {
+    "id": "a1b064df-333b-4015-9b7b-140c1e811766",
+    "name": "Rajma Chawal"
+  },
+  {
+    "id": "e63c62fb-472c-4bae-a136-dc7878605631",
+    "name": "Chole with Whole Wheat Rotis"
+  },
+  {
+    "id": "29b845cc-7646-4e17-9348-3402c386c837",
+    "name": "Paneer Masala with Brown Rice"
+  },
+  {
+    "id": "6e6c2f74-3786-4f0b-8389-396757e07920",
+    "name": "Home Style Chicken Curry with Rice"
+  },
+  {
+    "id": "b80fefd6-4f96-478d-9027-df6b9d19a824",
+    "name": "Soya Chunk Masala with Rotis"
+  },
+  {
+    "id": "b530cc96-5f50-4d42-bd88-dccbcfc69e2b",
+    "name": "Dal Tadka with Jeera Rice"
+  },
+  {
+    "id": "5dfedc9a-ebed-472f-a368-7728eb59137e",
+    "name": "Grilled Chicken with Roti and Salad"
+  },
+  {
+    "id": "a1e03a0b-eb09-47ef-b60c-e9a8b492a9ad",
+    "name": "Curd Rice with Boiled Eggs"
+  },
+  {
+    "id": "15c1132a-90b8-43b4-949c-3d822793ed53",
+    "name": "Rajma Chawal"
+  },
+  {
+    "id": "8287f0db-3a25-4da9-8233-160650bfe513",
+    "name": "Chole with Whole Wheat Rotis"
+  },
+  {
+    "id": "b687cccd-61f8-4d67-8779-56fc9439fa17",
+    "name": "Paneer Masala with Brown Rice"
+  },
+  {
+    "id": "cf8065e9-cc90-4b63-9ea3-b97c8806528b",
+    "name": "Home Style Chicken Curry with Rice"
+  },
+  {
+    "id": "572b3f37-e896-4757-a141-d1e0679a89b7",
+    "name": "Soya Chunk Masala with Rotis"
+  },
+  {
+    "id": "7ff5b4c6-00e4-4d3d-9455-3ab72adb3756",
+    "name": "Dal Tadka with Jeera Rice"
+  },
+  {
+    "id": "0e6d935b-3ecd-4680-ac8c-6e357f485c7f",
+    "name": "Grilled Chicken with Roti and Salad"
+  },
+  {
+    "id": "e32c2395-1ced-4235-8a72-396958db4b55",
+    "name": "Curd Rice with Boiled Eggs"
+  },
+  {
+    "id": "d5660cda-10c2-4d2c-97f3-5d6eebed35f3",
+    "name": "Vegetable Moong Dal Khichdi"
+  },
+  {
+    "id": "71125a27-42ac-491f-96a8-43a085bcd7ba",
+    "name": "Egg Curry with Whole Wheat Rotis"
+  },
+  {
+    "id": "405a3b06-7644-42ae-affb-c6de71525a71",
+    "name": "Grilled Paneer with Jeera Rice"
+  },
+  {
+    "id": "f63f0f3f-1082-4b54-869b-525399568e99",
+    "name": "Chicken Keema with Whole Wheat Rotis"
+  },
+  {
+    "id": "d87f2e17-485a-4754-ab55-429e882823f5",
+    "name": "Palak Paneer with Brown Rice"
+  },
+  {
+    "id": "20b22907-6ea2-42e5-b429-0a9087a5f900",
+    "name": "Tandoori Chicken with Curd and Salad"
+  },
+  {
+    "id": "23dcf92e-2766-4e15-a3ed-8fc8a53f8eb4",
+    "name": "Masoor Dal with Whole Wheat Rotis"
+  },
+  {
+    "id": "716d2c66-e3a8-4739-b678-4840db5b86e6",
+    "name": "Home Style Fish Curry with Rice"
+  },
+  {
+    "id": "5bc661cb-b61b-4c82-974a-260a300e7afd",
+    "name": "Soya Chunk Pulao with Curd"
+  },
+  {
+    "id": "71289c9d-dabd-41a4-b66a-b823012dede9",
+    "name": "Chicken Stir Fry with Roti"
+  },
+  {
+    "id": "1131f2ab-d910-4e18-a960-874ab49eb215",
+    "name": "Matar Paneer with Whole Wheat Rotis"
+  },
+  {
+    "id": "714aa85c-247b-4a30-9758-8e96be183a2e",
+    "name": "Chicken Breast Masala with Whole Wheat Rotis"
+  },
+  {
+    "id": "66e4377e-33f7-4558-89bb-6e1601c8aa64",
+    "name": "Light Palak Paneer with Whole Wheat Roti"
+  },
+  {
+    "id": "a452cc39-d53e-48fb-8199-99f006854141",
+    "name": "Grilled Chicken with Steamed Vegetables"
+  },
+  {
+    "id": "26c1853d-bf72-45c1-9be6-00daa1c754e3",
+    "name": "Moong Dal Soup with Paneer"
+  },
+  {
+    "id": "711781c0-bd8b-431e-ac1f-85688795a62a",
+    "name": "Egg Bhurji with Whole Wheat Roti"
+  },
+  {
+    "id": "eb14eaad-badf-4e01-a6f3-0e10d9684163",
+    "name": "Soya Chunk Stir Fry with Salad"
+  },
+  {
+    "id": "e8d34144-4d86-4408-80b0-3af2520e9986",
+    "name": "Chicken Clear Soup with Vegetables"
+  },
+  {
+    "id": "adebe608-111f-460d-bbc3-00378b2a5ef0",
+    "name": "Tofu Bhurji with Multigrain Roti"
+  },
+  {
+    "id": "4f55213e-318a-4cb9-9edc-6b9fed4818a9",
+    "name": "Tofu Bhurji with Multigrain Roti"
+  },
+  {
+    "id": "3eb6d1ff-7754-4234-9649-f6e2d017b56a",
+    "name": "Grilled Fish Tikka with Salad"
+  },
+  {
+    "id": "cc24f5be-f8b8-4f5c-bad0-187a69d2b6f6",
+    "name": "Lauki Chana Dal with Whole Wheat Roti"
+  },
+  {
+    "id": "18037a98-49f9-4d59-8c2d-44ac83f2bd2a",
+    "name": "Paneer Vegetable Stir Fry"
+  },
+  {
+    "id": "561562d6-b333-4349-ae38-b3fe991f0230",
+    "name": "Roasted Chana Peanut Mix"
+  },
+  {
+    "id": "53a8d8db-2732-4c14-b86b-f4cec61895ae",
+    "name": "Sprouted Moong Chaat"
+  },
+  {
+    "id": "a1b21382-5b8d-4958-b96d-aa6cc4f23e36",
+    "name": "Boiled Eggs with Black Pepper"
+  },
+  {
+    "id": "f6557561-2b23-4e4c-806a-ab0db782c735",
+    "name": "Hung Curd with Mixed Seeds"
+  },
+  {
+    "id": "59ecf6c0-71c3-44b3-9f0b-a275e335653a",
+    "name": "Peanut Butter Banana Bowl"
+  },
+  {
+    "id": "1d6d145d-8c96-4ca0-a881-13f432566664",
+    "name": "Paneer Cubes with Lemon and Pepper"
+  },
+  {
+    "id": "c434afdb-a4e3-4d08-98be-cda6704485c9",
+    "name": "Boiled Corn and Chickpea Salad"
+  },
+  {
+    "id": "e69b1599-19c3-425b-842c-86719df4747c",
+    "name": "Egg and Cucumber Protein Plate"
+  },
+  {
+    "id": "73cfd5fd-8ff0-4e07-be91-b73b6d70acc9",
+    "name": "Soya Chunk Mini Stir Fry"
+  },
+  {
+    "id": "accb8e14-94ba-471b-bd04-91b4281bacc2",
+    "name": "Paneer and Sprout Chaat"
+  },
+  {
+    "id": "20bbbe9c-f9df-4941-bc1c-7d39d91dd6ce",
+    "name": "Double Paneer Bhurji Plate"
+  },
+  {
+    "id": "ace41cb8-f346-4b9d-b71e-675e33a99284",
+    "name": "Chicken Breast Power Bowl"
+  },
+  {
+    "id": "b1a46105-a6f1-4316-ac8c-f984c85b083b",
+    "name": "Soya Chunk Protein Curry"
+  },
+  {
+    "id": "0068e727-b25f-48e7-a5c3-84caa4578b84",
+    "name": "Egg White Power Scramble"
+  },
+  {
+    "id": "cd011560-67b3-47b5-b4b6-7daab441934f",
+    "name": "Paneer Yogurt Protein Bowl"
+  },
+  {
+    "id": "33949a4f-b97e-4a97-82e6-4f09014a52a8",
+    "name": "Lean Fish Protein Curry Bowl"
+  },
+  {
+    "id": "7b603819-99f7-42b8-817e-8bb5a04902c6",
+    "name": "Double Chicken Keema Plate"
+  },
+  {
+    "id": "5028fb13-520b-4ceb-aff2-968d72eb8b0f",
+    "name": "Mixed Dal Paneer Protein Bowl"
+  },
+  {
+    "id": "d4322c95-c9a9-4e95-83aa-421dbbec2cd5",
+    "name": "Tofu Chickpea Protein Stir Fry"
+  },
+  {
+    "id": "8f616c72-74d4-4fdf-8b9b-73f2ae36ade4",
+    "name": "Ultra Lean Chicken Egg Combo"
+  }
+]
